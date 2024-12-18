@@ -1,4 +1,3 @@
 # created by virtualenv automatically
 .venv/*
-saved_summary_model/
 *.pem
