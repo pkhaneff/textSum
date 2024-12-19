@@ -16,8 +16,8 @@ app.add_middleware(
 )
 
 # Load model and tokenizer on CPU
-model = T5ForConditionalGeneration.from_pretrained("./saved_summary_model")
-tokenizer = T5Tokenizer.from_pretrained("./saved_summary_model")
+model = T5ForConditionalGeneration.from_pretrained("phuckhang1908/T5_summary")
+tokenizer = T5Tokenizer.from_pretrained("phuckhang1908/T5_summary")
 model = model.to("cpu")
 
 # Input schema for requests
