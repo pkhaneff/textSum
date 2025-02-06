@@ -2,7 +2,6 @@ import os
 from log import Log
 from dotenv import load_dotenv
 
-# Load biến môi trường từ file .env
 load_dotenv()
 
 class EnvVars:
@@ -23,7 +22,7 @@ class EnvVars:
         self.target_extensions = [lang.strip() for lang in self.target_extensions.split(",")]
 
         if len(self.target_extensions) == 0:
-            raise ValueError(f"Please specify TARGET_EXTENSIONS. Coma separated, could be, like: kt,java,py,js,swift,c,h. Only these files will be reviewed")
+            raise ValueError(f"Please specify TARGET_EXTENSIONS. Coma separated, could be, like: ts,java,py,js,c. Only these files will be reviewed")
 
         self.env_vars = {
             "owner" : self.owner,
