@@ -25,10 +25,6 @@ class EnvVars:
             raise ValueError(f"Please specify TARGET_EXTENSIONS. Coma separated, could be, like: ts,java,py,js,c. Only these files will be reviewed")
       
 
-        print(f"GITHUB_TOKEN: {os.getenv('GITHUB_TOKEN')}")
-        print(f"CHATGPT_KEY: {os.getenv('CHATGPT_KEY')}")
-        print(f"CHATGPT_MODEL: {os.getenv('CHATGPT_MODEL')}")
-
         self.env_vars = {
             "owner" : self.owner,
             "repo" : self.repo,
