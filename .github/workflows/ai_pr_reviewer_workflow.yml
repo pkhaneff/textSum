@@ -23,7 +23,7 @@ jobs:
         run: pip install -r .ai/io/nerdythings/requirements.txt
 
       - name: Load environment variables
-      run: cat .env >> $GITHUB_ENV
+        run: cat .env >> $GITHUB_ENV
       
       - name: Run Reviewer Script
         env:
