@@ -1,7 +1,9 @@
-
-
 import os
 from log import Log
+from dotenv import load_dotenv
+
+# Load biến môi trường từ file .env
+load_dotenv()
 
 class EnvVars:
     def __init__(self):
