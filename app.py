@@ -50,5 +50,5 @@ def summarize_dialogue(dialogue: str) -> str:
 # API endpoint for text summarization
 @app.post('/summarize/')
 async def summarize(dialogue_input: DialogueInput):
-summary = summarize(dialogue_input.dialogue)
-    return {'summary': summary}
+    summary = summarize_dialogue(dialogue_input.dialogue)
+    return {'summary-text': summary}

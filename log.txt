@@ -55,13 +55,13 @@ def summarize_dialogue(dialogue: str) -> str:
 @app.post('/summarize/')
 async def summarize(dialogue_input: DialogueInput):
     summary = summarize_dialogue(dialogue_input.dialogue)
-    return {'summary': summary}
+    return {'summary-text': summary}
 
 
 ----------------------------------------------------------------------
 
 diff --git a/app.py b/app.py
-index 46f5aa8..cbbc04c 100644
+index 46f5aa8..ce6c81a 100644
 --- a/app.py
 +++ b/app.py
 @@ -50,5 +50,5 @@ def summarize_dialogue(dialogue: str) -> str:
@@ -69,13 +69,14 @@ index 46f5aa8..cbbc04c 100644
  @app.post('/summarize/')
  async def summarize(dialogue_input: DialogueInput):
 -    summary = summarize_(dialogue_input.dialogue)
-+    summary = summarize_dialogue(dialogue_input.dialogue)
++summary = summarize(dialogue_input.dialogue)
      return {'summary': summary}
 
 
 ----------------------------------------------------------------------
 
-No  critical  issues  found .
+51  :  Ind ent ation Error  unexpected  un indent  ( summary  =  summarize (dialog ue _input .dialog ue ))
+ No  critical  issues  found
 
 ----------------------------------------------------------------------
 
