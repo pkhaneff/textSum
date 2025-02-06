@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from transformers import T5Tokenizer, T5ForConditionalGeneration
 from fastapi.middleware.cors import CORSMiddleware
 import re
 
@@ -50,5 +49,5 @@ def summarize_dialogue(dialogue: str) -> str:
 # API endpoint for text summarization
 @app.post('/summarize/')
 async def summarize(dialogue_input: DialogueInput):
-    summary = summarize_dialogue(dialogue_input.dialogue)
+    summary = summarize(dialogue_input.dialogue)
     return {'summary-text': summary}
