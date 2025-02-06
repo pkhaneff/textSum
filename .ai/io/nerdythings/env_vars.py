@@ -4,6 +4,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+# In thử giá trị
+print("GITHUB_TOKEN:", os.getenv("GITHUB_TOKEN"))
+print("CHATGPT_KEY:", os.getenv("CHATGPT_KEY"))
+print("CHATGPT_MODEL:", os.getenv("CHATGPT_MODEL"))
+
 class EnvVars:
     def __init__(self):
         self.owner = os.getenv('REPO_OWNER')

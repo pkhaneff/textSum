@@ -61,29 +61,21 @@ async def summarize(dialogue_input: DialogueInput):
 ----------------------------------------------------------------------
 
 diff --git a/app.py b/app.py
-index 46f5aa8..8379cd8 100644
+index 46f5aa8..cbbc04c 100644
 --- a/app.py
 +++ b/app.py
-@@ -1,6 +1,5 @@
- from fastapi import FastAPI
- from pydantic import BaseModel
--from transformers import T5Tokenizer, T5ForConditionalGeneration
- from fastapi.middleware.cors import CORSMiddleware
- import re
- 
-@@ -50,5 +49,5 @@ def summarize_dialogue(dialogue: str) -> str:
+@@ -50,5 +50,5 @@ def summarize_dialogue(dialogue: str) -> str:
  # API endpoint for text summarization
  @app.post('/summarize/')
  async def summarize(dialogue_input: DialogueInput):
 -    summary = summarize_(dialogue_input.dialogue)
--    return {'summary': summary}
-+    summary = summarize(dialogue_input.dialogue)
-+    return {'summary-text': summary}
++    summary = summarize_dialogue(dialogue_input.dialogue)
+     return {'summary': summary}
 
 
 ----------------------------------------------------------------------
 
-5  :  Un resolved  reference  ' sum mar ize _'  Name Error :  name  ' sum mar ize _'  is  not  defined
+No  critical  issues  found .
 
 ----------------------------------------------------------------------
 
