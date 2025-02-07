@@ -7,19 +7,44 @@ class AiBot(ABC):
     
     __no_response = "No critical issues found"
     __problems="errors, issues, potential crashes or unhandled exceptions"
-    __chat_gpt_ask_long="""
-Could you describe briefly {problems} for the next code with given git diffs? 
-Please, also, do not add intro words, just print errors in the format: "line_number : cause effect"
-If there are no {problems} just say "{no_response}".
+    __chat_gpt_ask_long = """
+        You are an AI code reviewer. Your task is to analyze the provided code changes (Git diffs) and full source code of a file, then identify **all potential issues** including but not limited to:
+        - **Syntax Errors**: Any incorrect syntax that would cause compilation or runtime failure.
+        - **Security Vulnerabilities**: Possible security flaws such as SQL injection, command injection, hardcoded secrets, weak encryption, or improper input validation.
+        - **Logical Errors**: Flaws in the code logic that might lead to incorrect results, unintended behavior, or unexpected crashes.
+        - **Performance Issues**: Inefficient loops, redundant operations, memory leaks, or excessive resource consumption.
+        - **Best Practices Violations**: Code that does not follow standard conventions, poor exception handling, or missing important comments/documentation.
+        - **Concurrency and Thread Safety Issues**: Potential race conditions, deadlocks, or improper handling of asynchronous code.
 
-DIFFS:
+        **Instructions:**
+        - Review the Git diffs carefully and check how they modify the existing code.
+        - Compare the changes against the full source code to determine their impact.
+        - Identify any issues that could arise from the new changes.
+        - Do **not** add introductory or concluding statements.
+        - Provide your findings in the following strict format:  
+          ```
+          line_number : [Type of Issue] Description of the issue and potential consequences.
+          ```
+          **Example output:**
+          ```
+          23 : [Security] SQL query is vulnerable to injection due to missing parameterized queries.
+          45 : [Logic] Division by zero possible when variable `x` is zero.
+          78 : [Performance] Unnecessary nested loop increases time complexity to O(n^2).
+          ```
 
-{diffs}
+        If no issues are found, respond with exactly: "{no_response}".
 
-Full code from the file:
+        **Git Diffs:**
+        ```
+        {diffs}
+        ```
 
-{code}
-"""
+        **Full Code:**
+        ```
+        {code}
+        ```
+    """
+
 
     @abstractmethod
     def ai_request_diffs(self, code, diffs) -> str:
