@@ -8,18 +8,18 @@ class AiBot(ABC):
     __no_response = "No critical issues found"
     __problems="errors, issues, potential crashes or unhandled exceptions"
     __chat_gpt_ask_long="""
-Could you describe briefly {problems} for the next code with given git diffs? 
-Please, also, do not add intro words, just print errors in the format: "line_number : cause effect"
-If there are no {problems} just say "{no_response}".
+        Could you describe briefly {problems} for the next code with given git diffs? 
+        Please, also, do not add intro words, just print errors in the format: "line_number : cause effect"
+        If there are no {problems} just say "{no_response}".
 
-DIFFS:
+        DIFFS:
 
-{diffs}
+        {diffs}
 
-Full code from the file:
+        Full code from the file:
 
-{code}
-"""
+        {code}
+    """
 
     @abstractmethod
     def ai_request_diffs(self, code, diffs) -> str:
