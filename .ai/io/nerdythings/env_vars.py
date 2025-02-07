@@ -2,6 +2,8 @@
 
 import os
 from log import Log
+from dotenv import load_dotenv
+load_dotenv()
 
 class EnvVars:
     def __init__(self):
