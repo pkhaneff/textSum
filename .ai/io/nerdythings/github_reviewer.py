@@ -15,13 +15,17 @@ def main():
     github = GitHub(vars.token, vars.owner, vars.repo, vars.pull_number)
 
     remote_name = Git.get_remote_name()
-    
     Log.print_green("Remote is", remote_name)
+    
     changed_files = Git.get_diff_files(remote_name=remote_name, head_ref=vars.head_ref, base_ref=vars.base_ref)
     Log.print_green("Found changes in files", changed_files)
+    
     if not changed_files:
         Log.print_red("No changes between branches")
         return  # Dừng nếu không có thay đổi
+    
+    latest_commit_id = github.get_latest_commit_id()  # 🔹 Lấy commit mới nhất từ PR
+    Log.print_yellow(f"Using latest commit SHA: {latest_commit_id}")
 
     for file in changed_files:
         Log.print_green("Checking file", file)
@@ -53,7 +57,7 @@ def main():
 
         if AiBot.is_no_issues_text(response):
             Log.print_green(f"No issues found in file: {file}")
-            post_general_comment(github, file, "AI review: ✅ No issues detected in this file.")
+            post_general_comment(github, file, "AI review: ✅ No issues detected in this file.", latest_commit_id)
             continue
 
         responses = AiBot.split_ai_response(response)
@@ -61,16 +65,13 @@ def main():
             Log.print_red(f"AI response parsing failed: {responses}")
             continue
 
-        result = False
-        commit_id = vars.commit_id  # 🔹 Lấy commit ID từ GitHub Action
-        Log.print_yellow(f"Using commit SHA from GitHub Action: {commit_id}")
-
         for response in responses:
-            if response.line and commit_id:
-                result = post_line_comment(github=github, file=file, text=response.text, line=response.line, commit_id=commit_id)
+            result = False
+            if response.line:
+                result = post_line_comment(github=github, file=file, text=response.text, line=response.line, commit_id=latest_commit_id)
 
             if not result:
-                result = post_general_comment(github=github, file=file, text=response.text)
+                result = post_general_comment(github=github, file=file, text=response.text, commit_id=latest_commit_id)
 
             if not result:
                 Log.print_red(f"Failed to post comment for file: {file}")
@@ -90,11 +91,11 @@ def post_line_comment(github: GitHub, file: str, text: str, line: int, commit_id
         Log.print_red(f"Failed line comment for {file}:{line} -> {e}")
         return False
 
-def post_general_comment(github: GitHub, file: str, text: str) -> bool:
+def post_general_comment(github: GitHub, file: str, text: str, commit_id: str) -> bool:
     Log.print_green(f"Posting general comment on {file}")
     try:
         message = f"{file}\n{text}"
-        git_response = github.post_comment_general(message)
+        git_response = github.post_comment_general(message, commit_id)
         Log.print_yellow(f"Posted successfully: {git_response}")
         return True
     except RepositoryError as e:
