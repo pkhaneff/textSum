@@ -1,5 +1,3 @@
-
-
 import os
 from log import Log
 from dotenv import load_dotenv
@@ -22,17 +20,20 @@ class EnvVars:
         self.target_extensions = os.getenv('TARGET_EXTENSIONS')
         self.target_extensions = [lang.strip() for lang in self.target_extensions.split(",")]
 
+        self.commit_id = os.getenv('GITHUB_SHA') 
+
         if len(self.target_extensions) == 0:
-            raise ValueError(f"Please specify TARGET_EXTENSIONS. Coma separated, could be, like: kt,java,py,js,swift,c,h. Only these files will be reviewed")
+            raise ValueError(f"Please specify TARGET_EXTENSIONS. Comma separated, could be: kt,java,py,js,swift,c,h. Only these files will be reviewed")
 
         self.env_vars = {
-            "owner" : self.owner,
-            "repo" : self.repo,
-            "token" : self.token,
-            "base_ref" : self.base_ref,
-            "pull_number" : self.pull_number,
-            "chat_gpt_token" : self.chat_gpt_token,
-            "chat_gpt_model" : self.chat_gpt_model,
+            "owner": self.owner,
+            "repo": self.repo,
+            "token": self.token,
+            "base_ref": self.base_ref,
+            "pull_number": self.pull_number,
+            "chat_gpt_token": self.chat_gpt_token,
+            "chat_gpt_model": self.chat_gpt_model,
+            "commit_id": self.commit_id,  
         }
 
     def check_vars(self):
@@ -42,4 +43,3 @@ class EnvVars:
             raise ValueError(f"The following environment variables are missing or empty: {missing_vars_str}")
         else:
             Log.print_green("All required environment variables are set.")
-        

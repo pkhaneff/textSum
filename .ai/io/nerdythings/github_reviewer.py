@@ -62,14 +62,10 @@ def main():
             continue
 
         result = False
-        for response in responses:
-            commit_id = None
-            try:
-                commit_id = Git.get_last_commit_sha(file=file)
-            except RepositoryError as e:
-                Log.print_red(f"Failed to get commit SHA for {file}: {e}")
-                continue
+        commit_id = vars.commit_id  # 🔹 Lấy commit ID từ GitHub Action
+        Log.print_yellow(f"Using commit SHA from GitHub Action: {commit_id}")
 
+        for response in responses:
             if response.line and commit_id:
                 result = post_line_comment(github=github, file=file, text=response.text, line=response.line, commit_id=commit_id)
 
@@ -78,7 +74,6 @@ def main():
 
             if not result:
                 Log.print_red(f"Failed to post comment for file: {file}")
-                    
 
 def post_line_comment(github: GitHub, file: str, text: str, line: int, commit_id: str):
     Log.print_green(f"Posting line comment on {file}:{line}")
