@@ -1,17 +1,11 @@
-
-
 import os
 from git import Git 
-from pathlib import Path
 from ai.chat_gpt import ChatGPT
 from ai.ai_bot import AiBot
 from log import Log
 from env_vars import EnvVars
 from repository.github import GitHub
 from repository.repository import RepositoryError
-
-separator = "\n\n----------------------------------------------------------------------\n\n"
-log_file = open('output.txt', 'a')
 
 def main():
     vars = EnvVars()
@@ -33,8 +27,8 @@ def main():
 
         _, file_extension = os.path.splitext(file)
         file_extension = file_extension.lstrip('.')
-        if file_extension not in vars.target_extensions:
-            Log.print_yellow(f"Skipping, unsuported extension {file_extension} file {file}")
+        if not vars.target_extensions or file_extension not in vars.target_extensions:
+            Log.print_yellow(f"Skipping, unsupported extension {file_extension} file {file}")
             continue
 
         try:
@@ -44,25 +38,23 @@ def main():
             Log.print_yellow("File was removed. Continue.", file)
             continue
 
-        if len( file_content ) == 0: 
+        if len(file_content) == 0: 
             Log.print_red("File is empty")
             continue
 
         file_diffs = Git.get_diff_in_file(remote_name=remote_name, head_ref=vars.head_ref, base_ref=vars.base_ref, file_path=file)
-        if len( file_diffs ) == 0: 
+        if len(file_diffs) == 0: 
             Log.print_red("Diffs are empty")
         
         Log.print_green(f"Asking AI. Content Len:{len(file_content)} Diff Len: {len(file_diffs)}")
         response = ai.ai_request_diffs(code=file_content, diffs=file_diffs)
-
-        log_file.write(f"{separator}{file_content}{separator}{file_diffs}{separator}{response}{separator}")
 
         if AiBot.is_no_issues_text(response):
             Log.print_green("File looks good. Continue", file)
         else:
             responses = AiBot.split_ai_response(response)
             if len(responses) == 0:
-                Log.print_red("Responses where not parsed:", responses)
+                Log.print_red("Responses were not parsed:", responses)
 
             result = False
             for response in responses:
@@ -73,7 +65,8 @@ def main():
                 if not result:
                     raise RepositoryError("Failed to post any comments.")
                     
-def post_line_comment(github: GitHub, file: str, text:str, line: int):
+
+def post_line_comment(github: GitHub, file: str, text: str, line: int):
     Log.print_green("Posting line", file, line, text)
     try:
         git_response = github.post_comment_to_line(
@@ -88,7 +81,7 @@ def post_line_comment(github: GitHub, file: str, text:str, line: int):
         Log.print_red("Failed line comment", e)
         return False
 
-def post_general_comment(github: GitHub, file: str, text:str) -> bool:
+def post_general_comment(github: GitHub, file: str, text: str) -> bool:
     Log.print_green("Posting general", file, text)
     try:
         message = f"{file}\n{text}"
@@ -101,5 +94,3 @@ def post_general_comment(github: GitHub, file: str, text:str) -> bool:
 
 if __name__ == "__main__":
     main()
-
-log_file.close()
