@@ -19,8 +19,9 @@ def main():
     Log.print_green("Remote is", remote_name)
     changed_files = Git.get_diff_files(remote_name=remote_name, head_ref=vars.head_ref, base_ref=vars.base_ref)
     Log.print_green("Found changes in files", changed_files)
-    if len(changed_files) == 0: 
-        Log.print_red("No changes between branch")
+    if not changed_files:
+        Log.print_red("No changes between branches")
+        return  # Dừng nếu không có thay đổi
 
     for file in changed_files:
         Log.print_green("Checking file", file)
@@ -28,68 +29,81 @@ def main():
         _, file_extension = os.path.splitext(file)
         file_extension = file_extension.lstrip('.')
         if not vars.target_extensions or file_extension not in vars.target_extensions:
-            Log.print_yellow(f"Skipping, unsupported extension {file_extension} file {file}")
+            Log.print_yellow(f"Skipping unsupported extension: {file_extension} (file {file})")
             continue
 
         try:
             with open(file, 'r') as file_opened:
                 file_content = file_opened.read()
         except FileNotFoundError:
-            Log.print_yellow("File was removed. Continue.", file)
+            Log.print_yellow(f"File was removed, skipping: {file}")
             continue
 
-        if len(file_content) == 0: 
-            Log.print_red("File is empty")
+        if not file_content:
+            Log.print_red(f"File is empty: {file}")
             continue
 
         file_diffs = Git.get_diff_in_file(remote_name=remote_name, head_ref=vars.head_ref, base_ref=vars.base_ref, file_path=file)
-        if len(file_diffs) == 0: 
-            Log.print_red("Diffs are empty")
+        if not file_diffs:
+            Log.print_red(f"No diffs found for file: {file}")
+            continue
         
-        Log.print_green(f"Asking AI. Content Len:{len(file_content)} Diff Len: {len(file_diffs)}")
+        Log.print_green(f"Asking AI. Content Len: {len(file_content)}, Diff Len: {len(file_diffs)}")
         response = ai.ai_request_diffs(code=file_content, diffs=file_diffs)
 
         if AiBot.is_no_issues_text(response):
-            Log.print_green("File looks good. Continue", file)
-        else:
-            responses = AiBot.split_ai_response(response)
-            if len(responses) == 0:
-                Log.print_red("Responses were not parsed:", responses)
+            Log.print_green(f"No issues found in file: {file}")
+            post_general_comment(github, file, "AI review: ✅ No issues detected in this file.")
+            continue
 
-            result = False
-            for response in responses:
-                if response.line:
-                    result = post_line_comment(github=github, file=file, text=response.text, line=response.line)
-                if not result:
-                    result = post_general_comment(github=github, file=file, text=response.text)
-                if not result:
-                    raise RepositoryError("Failed to post any comments.")
+        responses = AiBot.split_ai_response(response)
+        if not responses:
+            Log.print_red(f"AI response parsing failed: {responses}")
+            continue
+
+        result = False
+        for response in responses:
+            commit_id = None
+            try:
+                commit_id = Git.get_last_commit_sha(file=file)
+            except RepositoryError as e:
+                Log.print_red(f"Failed to get commit SHA for {file}: {e}")
+                continue
+
+            if response.line and commit_id:
+                result = post_line_comment(github=github, file=file, text=response.text, line=response.line, commit_id=commit_id)
+
+            if not result:
+                result = post_general_comment(github=github, file=file, text=response.text)
+
+            if not result:
+                Log.print_red(f"Failed to post comment for file: {file}")
                     
 
-def post_line_comment(github: GitHub, file: str, text: str, line: int):
-    Log.print_green("Posting line", file, line, text)
+def post_line_comment(github: GitHub, file: str, text: str, line: int, commit_id: str):
+    Log.print_green(f"Posting line comment on {file}:{line}")
     try:
         git_response = github.post_comment_to_line(
             text=text, 
-            commit_id=Git.get_last_commit_sha(file=file), 
+            commit_id=commit_id, 
             file_path=file, 
-            line=line,
+            line=line
         )
-        Log.print_yellow("Posted", git_response)
+        Log.print_yellow(f"Posted successfully: {git_response}")
         return True
     except RepositoryError as e:
-        Log.print_red("Failed line comment", e)
+        Log.print_red(f"Failed line comment for {file}:{line} -> {e}")
         return False
 
 def post_general_comment(github: GitHub, file: str, text: str) -> bool:
-    Log.print_green("Posting general", file, text)
+    Log.print_green(f"Posting general comment on {file}")
     try:
         message = f"{file}\n{text}"
         git_response = github.post_comment_general(message)
-        Log.print_yellow("Posted general", git_response)
+        Log.print_yellow(f"Posted successfully: {git_response}")
         return True
-    except RepositoryError:
-        Log.print_red("Failed general comment")
+    except RepositoryError as e:
+        Log.print_red(f"Failed general comment for {file} -> {e}")
         return False
 
 if __name__ == "__main__":
