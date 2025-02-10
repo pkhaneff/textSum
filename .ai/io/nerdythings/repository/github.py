@@ -40,3 +40,16 @@ class GitHub(Repository):
         else:
             raise RepositoryError(f"Error with general comment {response.status_code} : {response.text}")
         
+    def get_latest_commit_id(self) -> str:
+        url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/pulls/{self.pull_number}/commits"
+        headers = self.__header_accept_json | self.__header_authorization
+        
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            commits = response.json()
+            if commits:
+                return commits[-1]["sha"]
+            else:
+                raise RepositoryError("No commits found in this pull request.")
+        else:
+            raise RepositoryError(f"Error fetching commits {response.status_code}: {response.text}")
