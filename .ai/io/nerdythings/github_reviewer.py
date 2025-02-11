@@ -37,7 +37,7 @@ def main():
             continue
 
         try:
-            with open(file, 'r') as file_opened:
+            with open(file, 'r', encoding="utf-8", errors="replace") as file_opened:
                 file_content = file_opened.read()
         except FileNotFoundError:
             Log.print_yellow(f"File was removed, skipping: {file}")

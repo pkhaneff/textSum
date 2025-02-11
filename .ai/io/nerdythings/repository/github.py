@@ -52,12 +52,16 @@ class GitHub(Repository):
 
             # Tìm PR có nhánh head trùng với pull request đang làm việc
             matching_pr = next(
-                (pr for pr in pull_requests if pr["head"]["ref"] == self.pull_number), 
+                (pr for pr in pull_requests if pr["number"] == int(self.pull_number)),
                 None
             )
 
+
             if not matching_pr:
                 raise RepositoryError(f"No matching open PR found for branch {self.pull_number}.")
+
+            print(f"Pull requests fetched: {[pr['number'] for pr in pull_requests]}")
+            print(f"Checking for PR number: {self.pull_number} (type: {type(self.pull_number)})")
 
             # Lấy commit mới nhất của PR đó
             commits_url = matching_pr["commits_url"]
@@ -73,3 +77,6 @@ class GitHub(Repository):
 
         else:
             raise RepositoryError(f"Error fetching pull requests {response.status_code}: {response.text}")
+
+
+    
