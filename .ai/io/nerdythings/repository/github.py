@@ -1,5 +1,3 @@
-
-
 import requests
 from repository.repository import Repository, RepositoryError
 
@@ -15,41 +13,63 @@ class GitHub(Repository):
         self.__url_add_comment = f"https://api.github.com/repos/{repo_owner}/{repo_name}/pulls/{pull_number}/comments"
         self.__url_add_issue = f"https://api.github.com/repos/{repo_owner}/{repo_name}/issues/{pull_number}/comments"
 
-    def post_comment_to_line(self, text, commit_id, file_path, line):
+    def post_comment_to_line(self, text: str, commit_id: str, file_path: str, line: int):
         headers = self.__header_accept_json | self.__header_authorization
         body = {
             "body": text,
             "commit_id": commit_id,
-            "path" : file_path,
-            "position" : line
+            "path": file_path,
+            "position": line
         }
-        response = requests.post(self.__url_add_comment, json = body, headers = headers)
-        if response.status_code == 200 or response.status_code == 201:
+        response = requests.post(self.__url_add_comment, json=body, headers=headers)
+        if response.status_code in [200, 201]:
             return response.json()
         else:
             raise RepositoryError(f"Error with line comment {response.status_code} : {response.text}")
-        
-    def post_comment_general(self, text):
+    
+    def post_comment_general(self, text, commit_id=None):
         headers = self.__header_accept_json | self.__header_authorization
-        body = {
-            "body": text
-        }
-        response = requests.post(self.__url_add_issue, json = body, headers = headers)
-        if response.status_code == 200 or response.status_code == 201:
+        body = { "body": text }
+        if commit_id:
+            body["commit_id"] = commit_id
+
+        response = requests.post(self.__url_add_issue, json=body, headers=headers)
+        if response.status_code in [200, 201]:
             return response.json()
         else:
             raise RepositoryError(f"Error with general comment {response.status_code} : {response.text}")
-        
+    
     def get_latest_commit_id(self) -> str:
-        url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/pulls/{self.pull_number}/commits"
+        # Lấy danh sách tất cả các PR mở
+        url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/pulls?state=open"
         headers = self.__header_accept_json | self.__header_authorization
-        
+
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
-            commits = response.json()
-            if commits:
-                return commits[-1]["sha"]
+            pull_requests = response.json()
+            if not pull_requests:
+                raise RepositoryError("No open pull requests found.")
+
+            # Tìm PR có nhánh head trùng với pull request đang làm việc
+            matching_pr = next(
+                (pr for pr in pull_requests if pr["head"]["ref"] == self.pull_number), 
+                None
+            )
+
+            if not matching_pr:
+                raise RepositoryError(f"No matching open PR found for branch {self.pull_number}.")
+
+            # Lấy commit mới nhất của PR đó
+            commits_url = matching_pr["commits_url"]
+            commits_response = requests.get(commits_url, headers=headers)
+            if commits_response.status_code == 200:
+                commits = commits_response.json()
+                if commits:
+                    return commits[-1]["sha"]  # Lấy commit cuối cùng (mới nhất)
+                else:
+                    raise RepositoryError("No commits found in this pull request.")
             else:
-                raise RepositoryError("No commits found in this pull request.")
+                raise RepositoryError(f"Error fetching commits {commits_response.status_code}: {commits_response.text}")
+
         else:
-            raise RepositoryError(f"Error fetching commits {response.status_code}: {response.text}")
+            raise RepositoryError(f"Error fetching pull requests {response.status_code}: {response.text}")

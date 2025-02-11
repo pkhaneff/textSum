@@ -18,7 +18,7 @@ class EnvVars:
         self.chat_gpt_model = os.getenv('CHATGPT_MODEL') 
 
         self.target_extensions = os.getenv('TARGET_EXTENSIONS')
-        self.target_extensions = [lang.strip() for lang in self.target_extensions.split(",")]
+        self.target_extensions = [lang.strip() for lang in self.target_extensions.split(",")] if self.target_extensions else []
 
         self.commit_id = os.getenv('GITHUB_SHA') 
 
@@ -43,3 +43,4 @@ class EnvVars:
             raise ValueError(f"The following environment variables are missing or empty: {missing_vars_str}")
         else:
             Log.print_green("All required environment variables are set.")
+            

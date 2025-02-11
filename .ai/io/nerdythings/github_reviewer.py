@@ -22,9 +22,9 @@ def main():
     
     if not changed_files:
         Log.print_red("No changes between branches")
-        return  # Dừng nếu không có thay đổi
+        return
     
-    latest_commit_id = github.get_latest_commit_id()  # 🔹 Lấy commit mới nhất từ PR
+    latest_commit_id = github.get_latest_commit_id()
     Log.print_yellow(f"Using latest commit SHA: {latest_commit_id}")
 
     for file in changed_files:
@@ -67,11 +67,11 @@ def main():
 
         for response in responses:
             result = False
-            if response.line:
-                result = post_line_comment(github=github, file=file, text=response.text, line=response.line, commit_id=latest_commit_id)
+            if hasattr(response, 'line') and response.line:
+                result = post_line_comment(github, file, response.text, response.line, latest_commit_id)
 
             if not result:
-                result = post_general_comment(github=github, file=file, text=response.text, commit_id=latest_commit_id)
+                result = post_general_comment(github, file, response.text, latest_commit_id)
 
             if not result:
                 Log.print_red(f"Failed to post comment for file: {file}")
@@ -79,12 +79,17 @@ def main():
 def post_line_comment(github: GitHub, file: str, text: str, line: int, commit_id: str):
     Log.print_green(f"Posting line comment on {file}:{line}")
     try:
-        git_response = github.post_comment_to_line(
-            text=text, 
-            commit_id=commit_id, 
-            file_path=file, 
-            line=line
-        )
+        if hasattr(github, 'post_comment_to_line'):
+            git_response = github.post_comment_to_line(
+                text=text, 
+                commit_id=commit_id, 
+                file_path=file, 
+                line=line
+            )
+        else:
+            Log.print_yellow("Method post_comment_to_line not found, using general comment instead")
+            return post_general_comment(github, file, f"Line {line}: {text}", commit_id)
+        
         Log.print_yellow(f"Posted successfully: {git_response}")
         return True
     except RepositoryError as e:
