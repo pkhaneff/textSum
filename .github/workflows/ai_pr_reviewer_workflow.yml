@@ -34,4 +34,4 @@ jobs:
           REPO_NAME: ${{ github.event.repository.name }}
           PULL_NUMBER: ${{ github.event.number }}
         run: |
-          python .ai/io/nerdythings/github_reviewer.py --comment-on-pr
+          python .ai/io/nerdythings/github_reviewer.py

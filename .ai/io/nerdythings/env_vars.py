@@ -28,7 +28,7 @@ class EnvVars:
         self.commit_id = os.getenv('GITHUB_SHA') 
 
         if len(self.target_extensions) == 0:
-            raise ValueError(f"Please specify TARGET_EXTENSIONS. Comma separated, could be: kt,java,py,js,swift,c,h. Only these files will be reviewed")
+            raise ValueError(f"Please specify TARGET_EXTENSIONS. Comma separated, could be: kt,java,py,js,swift,c. Only these files will be reviewed")
 
         self.env_vars = {
             "owner": self.owner,
