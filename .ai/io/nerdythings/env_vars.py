@@ -23,7 +23,7 @@ class EnvVars:
         self.chat_gpt_model = os.getenv('CHATGPT_MODEL') 
 
         self.target_extensions = os.getenv('TARGET_EXTENSIONS')
-        self.target_extensions = [lang.strip() for lang in self.target_extensions.split(",")] if self.target_extensions else []
+        self.target_extensions = os.getenv("TARGET_EXTENSIONS", "py,js,java").split(',')
 
         self.commit_id = os.getenv('GITHUB_SHA') 
 
