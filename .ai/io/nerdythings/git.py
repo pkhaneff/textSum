@@ -8,7 +8,7 @@ class Git:
     @staticmethod
     def __run_subprocess(options):
         Log.print_green(options)
-        result = subprocess.run(options, stdout=subprocess.PIPE, text=True)
+        result = subprocess.run(options, stdout=subprocess.PIPE, text=True, encoding="utf-8")
         if result.returncode == 0:
             return result.stdout
         else:
