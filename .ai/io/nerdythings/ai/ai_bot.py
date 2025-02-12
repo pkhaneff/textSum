@@ -67,7 +67,7 @@ class AiBot(ABC):
     def split_ai_response(input) -> list[LineComment]:
         if not input:
             return []
-        
+
         lines = input.strip().split("\n")
         models = []
 
@@ -79,10 +79,19 @@ class AiBot(ABC):
             match = re.match(r"(\d+)\s*:\s*\[(.*?)\]\s*(.*)", full_text)
             if match:
                 line_number, issue_type, description = match.groups()
-                models.append(LineComment(line=int(line_number), text=f"[{issue_type}] {description}"))
+
+                if "potential" in description.lower() and "consider" not in description.lower():
+                    continue  
+
+                clean_description = description.capitalize().strip()
+                if not clean_description.endswith("."):
+                    clean_description += "."
+
+                models.append(LineComment(line=int(line_number), text=f"[{issue_type}] {clean_description}"))
             else:
-                models.append(LineComment(line=0, text=full_text)) 
+                models.append(LineComment(line=0, text=full_text))
 
         return models
+
 
     
