@@ -4,7 +4,6 @@ from transformers import T5Tokenizer, T5ForConditionalGeneration
 from fastapi.middleware.cors import CORSMiddleware
 import re
 
-# Init app
 app = FastAPI(title='Text Summarization System', description="Summarize dialogues with T5", version="1.0")
 
 app.add_middleware(
@@ -15,16 +14,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load model and tokenizer on CPU
 model = T5ForConditionalGeneration.from_pretrained("phuckhang1908/T5_summary")
 tokenizer = T5Tokenizer.from_pretrained("phuckhang1908/T5_summary")
 model = model.to("cpu")
 
-# Input schema for requests
 class DialogueInput(BaseModel):
     dialogue: str
 
-# Clean text function
 def clean_text(text: str) -> str:
     text = re.sub(r'\r\n|\n', '\n', text)
     text = re.sub(r'[ \t]+', ' ', text)
@@ -32,12 +28,10 @@ def clean_text(text: str) -> str:
     text = '\n'.join([line.strip() for line in text.split('\n') if line.strip()])
     return text.lower()
 
-# Summarization function
 def summarize_dialogue(dialogue: str) -> str:
     dialogue = clean_text(dialogue)
     inputs = tokenizer(dialogue, return_tensors="pt", truncation=True, padding="max_length", max_length=512)
 
-    # Generate summary on CPU
     outputs = model.generate(
         inputs["input_ids"],
         max_length=150,
@@ -47,7 +41,6 @@ def summarize_dialogue(dialogue: str) -> str:
     summary = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return summary
 
-# API endpoint for text summarization
 @app.post('/summarize/')
 async def summarize(dialogue_input: DialogueInput):
     summary = summarize_dialogue(dialogue_input.dialogue)

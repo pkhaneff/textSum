@@ -7,41 +7,41 @@ from ai.line_comment import LineComment
 class AiBot(ABC):
     
     __no_response = "No critical issues found"
-    __problems="errors, issues, potential crashes or unhandled exceptions"
+    __problems = "errors, issues, potential crashes, or unhandled exceptions"
     __chat_gpt_ask_long = """
-        You are an AI code reviewer. Your task is to analyze the provided code changes (Git diffs) and full source code of a file, then identify **all potential issues** including but not limited to:
-        - **Syntax Errors**: Any incorrect syntax that would cause compilation or runtime failure.
-        - **Logical Errors**: Flaws in the code logic that might lead to incorrect results, unintended behavior, or unexpected crashes.
-        - **Performance Issues**: Inefficient loops, redundant operations, memory leaks, or excessive resource consumption.
+        You are an AI code reviewer specializing in identifying issues in modified code. Your task is to analyze **only meaningful code changes** from the Git diffs and report any issues.  
 
-        **Instructions:**
-        - Review the Git diffs carefully and check how they modify the existing code.
-        - Compare the changes against the full source code to determine their impact.
-        - Identify any issues that could arise from the new changes.
-        - Do **not** add introductory or concluding statements.
-        - Provide your findings in the following strict format:  
-          ```
-          line_number : [Type of Issue] Description of the issue and potential consequences.
-          ```
-          **Example output:**
-          ```
-          23 : [Security] SQL query is vulnerable to injection due to missing parameterized queries.
-          45 : [Logic] Division by zero possible when variable `x` is zero.
-          78 : [Performance] Unnecessary nested loop increases time complexity to O(n^2).
-          ```
-        - Make sure to strictly follow the given format, do not add any extra explanations.
-        If no issues are found, respond with exactly: "{no_response}".
+        **Review Scope:**  
+        - **Only analyze files with structural code changes.** Ignore files where only comments or formatting have changed.  
+        - **Focus on logic modifications.** Skip unchanged lines and purely stylistic adjustments.  
 
-        **Git Diffs:**
-        ```
+        **Review Guidelines:**  
+        - **Analyze only the changed lines.** Ignore unchanged code.  
+        - **Ignore formatting-only changes.** Focus on logic, syntax, security, and performance.  
+        - **Ensure accuracy.** Each issue must be directly linked to a modified line.  
+
+        **Issue Categories:**  
+        - **Syntax Errors**: Mistakes that cause compilation or runtime failures.  
+        - **Logical Errors**: Incorrect logic, unintended behavior, or edge cases.  
+        - **Security Issues**: Vulnerabilities like SQL injection, XSS, or unsafe operations.  
+        - **Performance Bottlenecks**: Inefficient algorithms, redundant operations, or excessive resource use.  
+
+        **Strict Output Format:**  
+        line_number : [Type] Description of the issue and potential impact.  
+        **Example:**  
+        42 : [Logic] if condition always evaluates to true, causing an unintended infinite loop.  
+        78 : [Security] Potential SQL injection due to missing parameterized query.  
+        103 : [Performance] Nested loop increases time complexity unnecessarily.  
+
+        - If no issues are found in the modified code, return exactly:  
+        
+        `{no_response}`.  
+
+        **Git Diffs (Only structural changes considered):**  
+
         {diffs}
-        ```
-
-        **Full Code:**
-        ```
-        {code}
-        ```
     """
+
 
 
     @abstractmethod
@@ -81,7 +81,7 @@ class AiBot(ABC):
                 line_number, issue_type, description = match.groups()
                 models.append(LineComment(line=int(line_number), text=f"[{issue_type}] {description}"))
             else:
-                models.append(LineComment(line=0, text=full_text))  # Nếu không có số dòng, ta để 0 (đánh dấu lỗi tổng quát)
+                models.append(LineComment(line=0, text=full_text)) 
 
         return models
 
