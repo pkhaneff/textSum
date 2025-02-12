@@ -23,7 +23,7 @@ class EnvVars:
         self.chat_gpt_model = os.getenv('CHATGPT_MODEL') 
 
         self.target_extensions = os.getenv('TARGET_EXTENSIONS')
-        self.target_extensions = os.getenv("TARGET_EXTENSIONS", "py,js,java").split(',')
+        self.target_extensions = os.getenv("TARGET_EXTENSIONS").split(',')
 
         self.commit_id = os.getenv('GITHUB_SHA') 
 
@@ -42,7 +42,6 @@ class EnvVars:
         }
 
     def get_latest_pull_number(self):
-        """Tự động lấy PR mới nhất nếu không có PULL_NUMBER"""
         url = f"https://api.github.com/repos/{self.owner}/{self.repo}/pulls?state=open"
         headers = {"Authorization": f"token {self.token}", "Accept": "application/vnd.github.v3+json"}
 
