@@ -1,6 +1,7 @@
 
 
 from abc import ABC, abstractmethod
+import re
 from ai.line_comment import LineComment
 
 class AiBot(ABC):
