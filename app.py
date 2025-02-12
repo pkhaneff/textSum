@@ -51,4 +51,4 @@ def summarize_dialogue(dialogue: str) -> str:
 @app.post('/summarize/')
 async def summarize(dialogue_input: DialogueInput):
     summary = summarize_dialogue(dialogue_input.dialogue)
-    return {'summary': chattext}
+    return {'summary': summary}

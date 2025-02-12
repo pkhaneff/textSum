@@ -11,7 +11,6 @@ class EnvVars:
         self.repo = os.getenv('REPO_NAME')
         self.token = os.getenv('GITHUB_TOKEN')
         
-        # ✅ Nếu `PULL_NUMBER` không có, tự động lấy từ GitHub API
         self.pull_number = os.getenv('PULL_NUMBER')
         if not self.pull_number:
             self.pull_number = self.get_latest_pull_number()
@@ -50,8 +49,8 @@ class EnvVars:
         if response.status_code == 200:
             pull_requests = response.json()
             if pull_requests:
-                latest_pr = pull_requests[0]  # Lấy PR mới nhất
-                return str(latest_pr["number"])  # Trả về số PR dưới dạng chuỗi
+                latest_pr = pull_requests[0] 
+                return str(latest_pr["number"]) 
             else:
                 raise ValueError("No open pull requests found.")
         else:

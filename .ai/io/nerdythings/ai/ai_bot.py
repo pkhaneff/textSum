@@ -10,11 +10,8 @@ class AiBot(ABC):
     __chat_gpt_ask_long = """
         You are an AI code reviewer. Your task is to analyze the provided code changes (Git diffs) and full source code of a file, then identify **all potential issues** including but not limited to:
         - **Syntax Errors**: Any incorrect syntax that would cause compilation or runtime failure.
-        - **Security Vulnerabilities**: Possible security flaws such as SQL injection, command injection, hardcoded secrets, weak encryption, or improper input validation.
         - **Logical Errors**: Flaws in the code logic that might lead to incorrect results, unintended behavior, or unexpected crashes.
         - **Performance Issues**: Inefficient loops, redundant operations, memory leaks, or excessive resource consumption.
-        - **Best Practices Violations**: Code that does not follow standard conventions, poor exception handling, or missing important comments/documentation.
-        - **Concurrency and Thread Safety Issues**: Potential race conditions, deadlocks, or improper handling of asynchronous code.
 
         **Instructions:**
         - Review the Git diffs carefully and check how they modify the existing code.
@@ -31,7 +28,7 @@ class AiBot(ABC):
           45 : [Logic] Division by zero possible when variable `x` is zero.
           78 : [Performance] Unnecessary nested loop increases time complexity to O(n^2).
           ```
-
+        - Make sure to strictly follow the given format, do not add any extra explanations.
         If no issues are found, respond with exactly: "{no_response}".
 
         **Git Diffs:**
@@ -67,30 +64,24 @@ class AiBot(ABC):
     
     @staticmethod
     def split_ai_response(input) -> list[LineComment]:
-        if input is None or not input:
+        if not input:
             return []
         
         lines = input.strip().split("\n")
         models = []
 
         for full_text in lines:
-            number_str = ''
-            number = 0
             full_text = full_text.strip()
-            if len( full_text ) == 0:
+            if not full_text:
                 continue
 
-            reading_number = True
-            for char in full_text.strip():
-                if reading_number:
-                    if char.isdigit():
-                        number_str += char
-                    else:
-                        break
+            match = re.match(r"(\d+)\s*:\s*\[(.*?)\]\s*(.*)", full_text)
+            if match:
+                line_number, issue_type, description = match.groups()
+                models.append(LineComment(line=int(line_number), text=f"[{issue_type}] {description}"))
+            else:
+                models.append(LineComment(line=0, text=full_text))  # Nếu không có số dòng, ta để 0 (đánh dấu lỗi tổng quát)
 
-            if number_str:
-                number = int(number_str)
-
-            models.append(LineComment(line = number, text = full_text))
         return models
+
     
