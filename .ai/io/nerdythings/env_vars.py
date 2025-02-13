@@ -55,7 +55,7 @@ class EnvVars:
         return self.pull_number is not None
 
 # Usage
-github_env = GitHubEnv()
+github_env = EnvVars()
 if github_env.should_review_code():
     print("Triggering AI-based code review...")
 else:
