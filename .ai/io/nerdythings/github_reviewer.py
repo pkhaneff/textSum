@@ -15,7 +15,7 @@ def main():
         Log.print_red("Skipping review: No open pull request detected.")
         return
     
-    github = GitHub(vars.token, vars.owner, vars.repo, vars.pull_number)
+    github = GitHub(vars.github_token, vars.owner, vars.repo, vars.pull_number)
     ai = ChatGPT(vars.chat_gpt_token, vars.chat_gpt_model)
     
     vars.head_ref = os.getenv("GITHUB_SHA")
