@@ -21,7 +21,7 @@ model = model.to("cpu")
 class DialogueInput(BaseModel):
     dialogue: str
 
-def clean_text(text: str) -> str:
+def clean_text() -> str:
     text = re.sub(r'\r\n|\n', '\n', text)
     text = re.sub(r'[ \t]+', ' ', text)
     text = re.sub(r'<.*?>', '', text)
@@ -44,4 +44,4 @@ def summarize_dialogue(dialogue: str) -> str:
 @app.post('/summarize/')
 async def summarize(dialogue_input: DialogueInput):
     summary = summarize_dialogue(dialogue_input.dialogue)
-    return {'summary': summary}
+    return {'summary': chattext}
