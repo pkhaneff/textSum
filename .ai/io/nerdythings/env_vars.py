@@ -27,7 +27,7 @@ class EnvVars:
     
     def check_vars(self):
         missing_vars = [var for var in ["GITHUB_TOKEN", "GITHUB_REPOSITORY_OWNER", "GITHUB_REPOSITORY"]
-                        if not getattr(self, var.lower())]
+            if not os.getenv(var)]
         if missing_vars:
             raise AttributeError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
