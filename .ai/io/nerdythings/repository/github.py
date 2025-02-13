@@ -48,6 +48,17 @@ class GitHub(Repository):
             return response.json() 
         else:
             raise RepositoryError(f"Error fetching PR commits {response.status_code}: {response.text}")
+        
+    def get_changed_files_in_commit(self, commit_sha: str):
+        url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/commits/{commit_sha}"
+        headers = self.__header_accept_json | self.__header_authorization
+
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            commit_data = response.json()
+            return [file["filename"] for file in commit_data.get("files", [])]
+        else:
+            raise RepositoryError(f"Error fetching changed files {response.status_code}: {response.text}")
     
     def get_latest_commit_id(self) -> str:
         url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/pulls?state=open"
