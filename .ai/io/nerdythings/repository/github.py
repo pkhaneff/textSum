@@ -63,13 +63,12 @@ class GitHub(Repository):
             print(f"Pull requests fetched: {[pr['number'] for pr in pull_requests]}")
             print(f"Checking for PR number: {self.pull_number} (type: {type(self.pull_number)})")
 
-            # Lấy commit mới nhất của PR đó
             commits_url = matching_pr["commits_url"]
             commits_response = requests.get(commits_url, headers=headers)
             if commits_response.status_code == 200:
                 commits = commits_response.json()
                 if commits:
-                    return commits[-1]["sha"]  # Lấy commit cuối cùng (mới nhất)
+                    return commits[-1]["sha"] 
                 else:
                     raise RepositoryError("No commits found in this pull request.")
             else:
