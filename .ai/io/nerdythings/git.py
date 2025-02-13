@@ -54,12 +54,15 @@ class Git:
         return Git._run_subprocess(command).splitlines()
 
     @staticmethod
-    def get_diff_in_file(file_path: str) -> str:
-        """Get the diff of a specific file in an open PR."""
-        pr_refs = Git.get_open_pr_base_head()
-        if not pr_refs:
-            return ""
-        base, head = pr_refs
+    def get_diff_files(head_ref: str = None, base_ref: str = None) -> List[str]:
+        """Get a list of changed files in an open PR or between specific refs."""
+        if not head_ref or not base_ref:
+            pr_refs = Git.get_open_pr_base_head()
+            if not pr_refs:
+                Log.print_yellow("No open PR found. Skipping review.")
+                return []
+            base_ref, head_ref = pr_refs
+
         remote_name = Git.get_remote_name()
-        command = ["git", "diff", f"{remote_name}/{base}", f"{remote_name}/{head}", "--", file_path]
-        return Git._run_subprocess(command)
+        command = ["git", "diff", "--name-only", f"{remote_name}/{base_ref}", f"{remote_name}/{head_ref}"]
+        return Git._run_subprocess(command).splitlines()
