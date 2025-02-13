@@ -77,7 +77,7 @@ class EnvVars:
             if not self.owner or not self.repo:
                 raise ValueError("REPO_OWNER and GITHUB_REPOSITORY must be set for push events.")
 
-        missing_vars = [var for var in required_vars if not getattr(self, var.lower(), None)]
+        missing_vars = [var for var in required_vars if not os.getenv(var)]
 
         if missing_vars:
             missing_vars_str = ", ".join(missing_vars)
