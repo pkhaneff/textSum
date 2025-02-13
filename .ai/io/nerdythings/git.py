@@ -16,7 +16,7 @@ class Git:
 
     @staticmethod
     def is_sha(ref: str) -> bool:
-        return re.match(r'^[0-9a-f]{40}$', ref.lower()) is not None
+        return ref is not None and re.match(r'^[0-9a-f]{40}$', ref.lower()) is not None
 
     @staticmethod
     def get_remote_name() -> str:

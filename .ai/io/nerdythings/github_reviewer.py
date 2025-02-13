@@ -18,12 +18,23 @@ def main():
     # Nếu là Pull Request, sử dụng GitHub API
     if event_name == "pull_request" and vars.pull_number:
         github = GitHub(vars.token, vars.owner, vars.repo, vars.pull_number)
-
-    # Nếu là push, sử dụng commit mới nhất
+    
+    # Nếu là push, lấy commit mới nhất và commit trước đó
     if event_name == "push":
         vars.head_ref = os.getenv("GITHUB_SHA")  # Lấy commit mới nhất
         vars.base_ref = os.getenv("GITHUB_BEFORE")  # Commit trước đó
-        Log.print_yellow(f"Push event detected. HEAD: {vars.head_ref}, BASE: {vars.base_ref}")
+
+        # Nếu không có base_ref, lấy branch mặc định
+        if not vars.base_ref:
+            Log.print_yellow("GITHUB_BEFORE is not set, using default branch")
+            vars.base_ref = os.getenv("GITHUB_REF_NAME")  # Lấy branch mặc định
+
+    Log.print_yellow(f"HEAD: {vars.head_ref}, BASE: {vars.base_ref}")
+
+    # Kiểm tra nếu base_ref vẫn là None
+    if not vars.base_ref:
+        Log.print_red("Error: base_ref is None. Cannot get diff.")
+        return
 
     changed_files = Git.get_diff_files(head_ref=vars.head_ref, base_ref=vars.base_ref)
     Log.print_yellow(f"DEBUG: Changed files detected: {changed_files}")
