@@ -15,23 +15,19 @@ def main():
     github = None
     event_name = os.getenv("GITHUB_EVENT_NAME")
 
-    # Nếu là Pull Request, sử dụng GitHub API
     if event_name == "pull_request" and vars.pull_number:
         github = GitHub(vars.token, vars.owner, vars.repo, vars.pull_number)
     
-    # Nếu là push, lấy commit mới nhất và commit trước đó
     if event_name == "push":
-        vars.head_ref = os.getenv("GITHUB_SHA")  # Lấy commit mới nhất
-        vars.base_ref = os.getenv("GITHUB_BEFORE")  # Commit trước đó
+        vars.head_ref = os.getenv("GITHUB_SHA")  
+        vars.base_ref = os.getenv("GITHUB_BEFORE")  
 
-        # Nếu không có base_ref, lấy branch mặc định
         if not vars.base_ref:
             Log.print_yellow("GITHUB_BEFORE is not set, using default branch")
-            vars.base_ref = os.getenv("GITHUB_REF_NAME")  # Lấy branch mặc định
+            vars.base_ref = os.getenv("GITHUB_REF_NAME")  
 
     Log.print_yellow(f"HEAD: {vars.head_ref}, BASE: {vars.base_ref}")
 
-    # Kiểm tra nếu base_ref vẫn là None
     if not vars.base_ref:
         Log.print_red("Error: base_ref is None. Cannot get diff.")
         return
@@ -97,7 +93,7 @@ def process_file(file, ai, github, commit_id):
     if AiBot.is_no_issues_text(response):
         Log.print_green(f"No issues found in file: {file}")
         if github:
-            post_general_comment(github, file, "AI review: ✅ No issues detected in this file.", commit_id)
+            post_general_comment(github, file, "✅ No issues detected in this file.", commit_id)
         return
 
     responses = AiBot.split_ai_response(response)
