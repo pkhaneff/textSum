@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 from log import Log
 from dotenv import load_dotenv
@@ -8,53 +9,63 @@ load_dotenv(dotenv_path=dotenv_path)
 
 class EnvVars:
     def __init__(self):
-        self.owner = os.getenv('REPO_OWNER')
-        self.repo = os.getenv('REPO_NAME')
-        self.token = os.getenv('GITHUB_TOKEN')
+        self.event_name = os.getenv('GITHUB_EVENT_NAME')
+        self.event_path = os.getenv('GITHUB_EVENT_PATH')
+
+        if not self.event_path:
+            raise ValueError("GITHUB_EVENT_PATH is not set. Make sure this variable is defined.")
+
+        with open(self.event_path, 'r') as f:
+            self.event_payload = json.load(f)
+
+        if self.event_name == 'pull_request':
+            self.handle_pull_request_event()
+        elif self.event_name == 'push':
+            self.handle_push_event()
+        else:
+            raise ValueError(f"Unsupported event type: {self.event_name}")
+
+        self.chat_gpt_token = os.getenv('CHATGPT_KEY')
+        self.chat_gpt_model = os.getenv('CHATGPT_MODEL')
+        self.target_extensions = os.getenv('TARGET_EXTENSIONS', 'kt,java,py,js,ts,swift,c,cpp').split(',')
         
-        self.pull_number = os.getenv('PULL_NUMBER')
-        if not self.pull_number:
-            self.pull_number = self.get_latest_pull_number()
-        
-        self.base_ref = os.getenv('GITHUB_BASE_REF') 
-        self.head_ref = os.getenv('GITHUB_HEAD_REF') 
-
-        self.chat_gpt_token = os.getenv('CHATGPT_KEY') 
-        self.chat_gpt_model = os.getenv('CHATGPT_MODEL') 
-
-        self.target_extensions = os.getenv('TARGET_EXTENSIONS')
-        self.target_extensions = os.getenv("TARGET_EXTENSIONS").split(',')
-
-        self.commit_id = os.getenv('GITHUB_SHA') 
-
-        if len(self.target_extensions) == 0:
-            raise ValueError(f"Please specify TARGET_EXTENSIONS. Comma separated, could be: kt,java,py,js,swift,c. Only these files will be reviewed")
+        self.commit_id = self.head_ref
 
         self.env_vars = {
             "owner": self.owner,
             "repo": self.repo,
             "token": self.token,
             "base_ref": self.base_ref,
+            "head_ref": self.head_ref,
             "pull_number": self.pull_number,
             "chat_gpt_token": self.chat_gpt_token,
             "chat_gpt_model": self.chat_gpt_model,
-            "commit_id": self.commit_id,  
+            "commit_id": self.commit_id,
         }
 
-    def get_latest_pull_number(self):
-        url = f"https://api.github.com/repos/{self.owner}/{self.repo}/pulls?state=open"
-        headers = {"Authorization": f"token {self.token}", "Accept": "application/vnd.github.v3+json"}
+        self.check_vars()
 
-        response = requests.get(url, headers=headers)
-        if response.status_code == 200:
-            pull_requests = response.json()
-            if pull_requests:
-                latest_pr = pull_requests[0] 
-                return str(latest_pr["number"]) 
-            else:
-                raise ValueError("No open pull requests found.")
-        else:
-            raise ValueError(f"Failed to fetch PRs: {response.status_code}, {response.text}")
+    def handle_pull_request_event(self):
+        pr = self.event_payload['pull_request']
+        self.owner = pr['base']['repo']['owner']['login']
+        self.repo = pr['base']['repo']['name']
+        self.token = os.getenv('GITHUB_TOKEN')
+        self.pull_number = str(pr['number'])
+        
+        if self.event_payload['action'] in ['opened', 'reopened']:
+            self.base_ref = pr['base']['ref']
+            self.head_ref = pr['head']['sha']
+        else: 
+            self.base_ref = self.event_payload['before']
+            self.head_ref = self.event_payload['after']
+
+    def handle_push_event(self):
+        self.owner = os.getenv('GITHUB_REPOSITORY_OWNER')
+        self.repo = os.getenv('GITHUB_REPOSITORY').split('/')[-1]
+        self.token = os.getenv('GITHUB_TOKEN')
+        self.base_ref = self.event_payload['before']
+        self.head_ref = self.event_payload['after']
+        self.pull_number = None 
 
     def check_vars(self):
         missing_vars = [var for var, value in self.env_vars.items() if not value]

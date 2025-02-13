@@ -3,7 +3,7 @@ from repository.repository import Repository, RepositoryError
 
 class GitHub(Repository):
 
-    def __init__(self, token, repo_owner, repo_name, pull_number):
+    def __init__(self, token: str, repo_owner: str, repo_name: str, pull_number: str = None):
         self.token = token
         self.repo_owner = repo_owner
         self.repo_name = repo_name

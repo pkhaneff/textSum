@@ -1,12 +1,21 @@
-name: Pull Request ChatGPT Review
+name: AI Code Review
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches: 
+      - '**'
 
+permissions:
+  contents: read
+  pull-requests: write
+  
 jobs:
-  ai_pr_reviewer:
+  review:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[AI REVIEW]')
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,11 +30,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r .ai/io/nerdythings/requirements.txt
-
-      - name: Run Reviewer Script
+      - name: Run AI Reviewer
         env:
-          GITHUB_HEAD_REF: ${{ github.head_ref }}
-          GITHUB_BASE_REF: ${{ github.base_ref }}
           CHATGPT_KEY: ${{ secrets.CHATGPT_KEY }}
           CHATGPT_MODEL: ${{ secrets.CHATGPT_MODEL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
