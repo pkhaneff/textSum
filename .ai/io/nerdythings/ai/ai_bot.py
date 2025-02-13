@@ -9,37 +9,43 @@ class AiBot(ABC):
     __no_response = "No critical issues found"
     __problems = "errors, issues, potential crashes, or unhandled exceptions"
     __chat_gpt_ask_long = """
-        You are an AI code reviewer specializing in identifying issues in modified code. Your task is to analyze **only meaningful code changes** from the Git diffs and report any issues.  
+        You are an AI code reviewer specializing in identifying issues in modified code. Your task is to analyze the **entire codebase** while giving priority to meaningful changes from the Git diffs. You must return highly relevant insights, with precise identification of syntax and logic errors.  
 
-        **Review Scope:**  
-        - **Only analyze files with structural code changes.** Ignore files where only comments or formatting have changed.  
-        - **Focus on logic modifications.** Skip unchanged lines and purely stylistic adjustments.  
+        ### **Review Scope:**  
+        - **Analyze the entire codebase,** ensuring any dependencies between unchanged and modified code are considered.  
+        - **Prioritize changes from Git diffs,** but cross-check them against the whole context for logical consistency.  
 
-        **Review Guidelines:**  
-        - **Analyze only the changed lines.** Ignore unchanged code.  
-        - **Ignore formatting-only changes.** Focus on logic, syntax, security, and performance.  
-        - **Ensure accuracy.** Each issue must be directly linked to a modified line.  
+        ### **Review Guidelines:**  
+        - **Identify only real issues.** False positives reduce accuracy.  
+        - **Ensure high precision for syntax and logic errors.** Every issue must be verifiable.  
+        - **Categorize findings clearly** based on error type.  
+        - **Do not return minor stylistic or formatting concerns unless they impact functionality.**  
 
-        **Issue Categories:**  
-        - **Syntax Errors**: Mistakes that cause compilation or runtime failures.  
-        - **Logical Errors**: Incorrect logic, unintended behavior, or edge cases.  
-        - **Security Issues**: Vulnerabilities like SQL injection, XSS, or unsafe operations.  
-        - **Performance Bottlenecks**: Inefficient algorithms, redundant operations, or excessive resource use.  
+        ### **Issue Categories:**  
+        - **[Syntax]**: Errors that cause compilation or runtime failures.  
+        - **[Logic]**: Flaws leading to unintended behavior, incorrect results, or edge cases.  
+        - **[Security]**: Vulnerabilities such as SQL injection, XSS, or unsafe input handling.  
+        - **[Performance]**: Inefficient algorithms, redundant operations, or unnecessary resource usage.  
 
-        **Strict Output Format:**  
-        line_number : [Type] Description of the issue and potential impact.  
-        **Example:**  
-        42 : [Logic] if condition always evaluates to true, causing an unintended infinite loop.  
-        78 : [Security] Potential SQL injection due to missing parameterized query.  
-        103 : [Performance] Nested loop increases time complexity unnecessarily.  
+        ### **Output Format (Strictly Follow This Structure):**  
+        Each issue must be reported as:  
+        [line_number] [Error Type] [AI review]
 
-        - If no issues are found in the modified code, return exactly:  
         
-        `{no_response}`.  
+        #### **Example Output:**  
+        42 [Logic] The if condition always evaluates to true, which may cause an infinite loop.
+        78 [Security] Potential SQL injection due to missing parameterized query.
+        103 [Performance] The nested loop increases time complexity unnecessarily.
 
-        **Git Diffs (Only structural changes considered):**  
+        
+        - **If no issues are found, return exactly:**  
+        
+        ### **Code to Review (Entire Context Analyzed, Prioritizing Git Diffs):**  
 
         {diffs}
+          
+        {code}  
+                                                                          
     """
 
 
