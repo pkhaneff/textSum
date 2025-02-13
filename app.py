@@ -29,14 +29,19 @@ def clean_text(text: str) -> str:
     return text.lower()
 
 def summarize_dialogue(dialogue: str) -> str:
-    inputs = tokenizer(dialogue, return_tensors="pt")
+    dialogue = clean_text(dialogue)
+    inputs = tokenizer(dialogue, return_tensors="pt", truncation=True, padding="max_length", max_length=512)
 
-    outputs = model.generate(inputs["input_ids"], max_length=1000)
-    return tokenizer.decode(outputs[0], skip_special_tokens=True)
-
+    outputs = model.generate(
+        inputs["input_ids"],
+        max_length=150,
+        num_beams=4,
+        early_stopping=True
+    )
+    summary = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return summary
 
 @app.post('/summarize/')
 async def summarize(dialogue_input: DialogueInput):
-    summary = summarize_dialogue(dialogue_input.dialogue * 1000000) 
+    summary = summarize_dialogue(dialogue_input.dialogue)
     return {'summary': summary}
-
