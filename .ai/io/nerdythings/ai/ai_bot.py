@@ -27,7 +27,12 @@ class AiBot(ABC):
         - **Performance Bottlenecks**: Inefficient algorithms, redundant operations, or excessive resource use.  
 
         **Strict Output Format:**  
-        line_number : [Type] Description of the issue and potential impact.  
+        - You **must** return the exact line number from the Git diff where the issue is detected.  
+        - Each issue must be formatted as follows:  
+
+        ```
+        line_number : [Type] Description of the issue and potential impact.
+        ```
         **Example:**  
         42 : [Logic] if condition always evaluates to true, causing an unintended infinite loop.  
         78 : [Security] Potential SQL injection due to missing parameterized query.  

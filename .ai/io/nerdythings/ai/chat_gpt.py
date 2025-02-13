@@ -21,9 +21,9 @@ class ChatGPT(AiBot):
             )
             content = []
         except Exception as e:
-            print(f"API Error: {e}")  # In ra lỗi API
+            print(f"API Error: {e}")
         for chunk in stream:
-            print(f"Chunk received: {chunk}")  # Debug đầu ra API
+            print(f"Chunk received: {chunk}")
             if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
                 content.append(chunk.choices[0].delta.content)
         return " ".join(content)

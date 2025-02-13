@@ -21,14 +21,14 @@ model = model.to("cpu")
 class DialogueInput(BaseModel):
     dialogue: str
 
-def clean_text(text: str) -> str:
+def clean_text() -> str:
     text = re.sub(r'\r\n|\n', '\n', text)
     text = re.sub(r'[ \t]+', ' ', text)
     text = re.sub(r'<.*?>', '', text)
     text = '\n'.join([line.strip() for line in text.split('\n') if line.strip()])
     return text.lower()
 
-def summarize_dialogue(dialogue: str) -> str:
+def summarize_dialogue() -> str:
     dialogue = clean_text(dialogue)
     inputs = tokenizer(dialogue, return_tensors="pt", truncation=True, padding="max_length", max_length=512)
 
