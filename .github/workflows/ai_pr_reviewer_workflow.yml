@@ -3,9 +3,6 @@ name: AI Code Review
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  push:
-    branches: 
-      - '**'
 
 permissions:
   contents: read
@@ -15,7 +12,6 @@ permissions:
 jobs:
   review:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[AI REVIEW]')
     
     steps:
       - name: Checkout code
@@ -31,6 +27,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r .ai/io/nerdythings/requirements.txt
+          
       - name: Run AI Reviewer
         env:
           CHATGPT_KEY: ${{ secrets.CHATGPT_KEY }}
@@ -39,7 +36,6 @@ jobs:
           TARGET_EXTENSIONS: ${{ vars.TARGET_EXTENSIONS }}
           REPO_OWNER: ${{ github.repository_owner }}
           REPO_NAME: ${{ github.event.repository.name }}
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
-          PULL_NUMBER: ${{ github.event.pull_request.number || '' }}
+          PULL_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           python .ai/io/nerdythings/github_reviewer.py
