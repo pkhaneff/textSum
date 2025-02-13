@@ -25,6 +25,12 @@ class EnvVars:
         
         self.validate_required_vars()
     
+    def check_vars(self):
+        missing_vars = [var for var in ["GITHUB_TOKEN", "GITHUB_REPOSITORY_OWNER", "GITHUB_REPOSITORY"]
+                        if not getattr(self, var.lower())]
+        if missing_vars:
+            raise AttributeError(f"Missing required environment variables: {', '.join(missing_vars)}")
+
     def parse_event(self):
         """Parses the event payload and extracts relevant information."""
         if self.event_name == "pull_request":
