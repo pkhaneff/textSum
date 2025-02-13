@@ -34,7 +34,7 @@ jobs:
         env:
           CHATGPT_KEY: ${{ secrets.CHATGPT_KEY }}
           CHATGPT_MODEL: ${{ secrets.CHATGPT_MODEL }}
-          GITHUB_TOKEN: ${{ secrets.API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARGET_EXTENSIONS: ${{ vars.TARGET_EXTENSIONS }}
           REPO_OWNER: ${{ github.repository_owner }}
           REPO_NAME: ${{ github.event.repository.name }}

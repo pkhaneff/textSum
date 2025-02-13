@@ -11,6 +11,8 @@ class EnvVars:
     def __init__(self):
         self.event_name = os.getenv('GITHUB_EVENT_NAME')
         self.event_path = os.getenv('GITHUB_EVENT_PATH')
+        self.chat_gpt_token = os.getenv('CHATGPT_KEY')
+        self.chat_gpt_model = os.getenv('CHATGPT_MODEL')
 
         if not self.event_path:
             raise ValueError("GITHUB_EVENT_PATH is not set. Make sure this variable is defined.")
@@ -25,10 +27,9 @@ class EnvVars:
         else:
             raise ValueError(f"Unsupported event type: {self.event_name}")
 
-        self.chat_gpt_token = os.getenv('CHATGPT_KEY')
-        self.chat_gpt_model = os.getenv('CHATGPT_MODEL')
+        print(f"DEBUG: CHATGPT_KEY={self.chat_gpt_token}, CHATGPT_MODEL={self.chat_gpt_model}")
         self.target_extensions = os.getenv('TARGET_EXTENSIONS', 'kt,java,py,js,ts,swift,c,cpp').split(',')
-        
+
         self.commit_id = self.head_ref
 
         self.env_vars = {
@@ -51,11 +52,11 @@ class EnvVars:
         self.repo = pr['base']['repo']['name']
         self.token = os.getenv('GITHUB_TOKEN')
         self.pull_number = str(pr['number'])
-        
+
         if self.event_payload['action'] in ['opened', 'reopened']:
             self.base_ref = pr['base']['ref']
             self.head_ref = pr['head']['sha']
-        else: 
+        else:
             self.base_ref = self.event_payload['before']
             self.head_ref = self.event_payload['after']
 
@@ -65,16 +66,20 @@ class EnvVars:
         self.token = os.getenv('GITHUB_TOKEN')
         self.base_ref = self.event_payload['before']
         self.head_ref = self.event_payload['after']
-        self.pull_number = None 
+        self.pull_number = None
 
     def check_vars(self):
-        required_vars = ["CHATGPT_KEY", "CHATGPT_MODEL", "GITHUB_TOKEN", "REPO_OWNER", "REPO_NAME"]
-        
-        if os.getenv("GITHUB_EVENT_NAME") == "pull_request":
-            required_vars.append("PULL_NUMBER")
+        required_vars = ["CHATGPT_KEY", "CHATGPT_MODEL", "GITHUB_TOKEN"]
+
+        if self.event_name == "pull_request":
+            # Consider pull_number optional
+            pass
+        elif self.event_name == "push":
+           if not self.owner or not self.repo:
+               raise ValueError("REPO_OWNER and GITHUB_REPOSITORY must be set for push events.")
 
         missing_vars = [var for var in required_vars if not getattr(self, var.lower(), None)]
-        
+
         if missing_vars:
             missing_vars_str = ", ".join(missing_vars)
             raise ValueError(f"The following environment variables are missing or empty: {missing_vars_str}")
