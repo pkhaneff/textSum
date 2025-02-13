@@ -12,6 +12,14 @@ class GitHub(Repository):
             "Accept": "application/vnd.github.v3+json"
         }
 
+    def post_comment_general(self, message: str, commit_id: str):
+        """Post một comment chung lên pull request."""
+        return self.post_comment(text=message)
+
+    def post_comment_to_line(self, text: str, commit_id: str, file_path: str, line: int):
+        """Post một comment vào một dòng cụ thể trong pull request."""
+        return self.post_comment(text=text, commit_id=commit_id, file_path=file_path, line=line)
+
     def _get_open_pull_requests(self):
         url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/pulls?state=open"
         response = requests.get(url, headers=self.headers)
