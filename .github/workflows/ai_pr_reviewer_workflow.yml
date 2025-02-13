@@ -38,6 +38,6 @@ jobs:
           TARGET_EXTENSIONS: ${{ vars.TARGET_EXTENSIONS }}
           REPO_OWNER: ${{ github.repository_owner }}
           REPO_NAME: ${{ github.event.repository.name }}
-          PULL_NUMBER: ${{ github.event.number || '' }}
+          PULL_NUMBER: ${{ github.event.pull_request.number || '' }}
         run: |
           python .ai/io/nerdythings/github_reviewer.py
