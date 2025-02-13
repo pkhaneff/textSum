@@ -1,5 +1,5 @@
 import os
-from git import Git
+from git import Git 
 from ai.chat_gpt import ChatGPT
 from ai.ai_bot import AiBot
 from log import Log
@@ -17,11 +17,11 @@ def main():
     changed_files = Git.get_diff_files(head_ref=vars.head_ref, base_ref=vars.base_ref)
     Log.print_yellow(f"DEBUG: Changed files detected: {changed_files}")
     Log.print_green("Found changes in files", changed_files)
-
+    
     if not changed_files:
         Log.print_red("No changes between commits")
         return
-
+    
     if github:
         latest_commit_id = vars.head_ref
         Log.print_yellow(f"Using latest commit SHA: {latest_commit_id}")
@@ -31,37 +31,9 @@ def main():
     else:
         Log.print_yellow("No associated pull request, skipping comment posting")
 
-def get_code_snippet(file_path, line_number, context_lines=2):
-    """
-    Extracts a code snippet from a file, including the specified line and surrounding context.
-
-    Args:
-        file_path (str): The path to the file.
-        line_number (int): The line number to center the snippet around.
-        context_lines (int): The number of lines of context to include before and after the target line.
-
-    Returns:
-        str: A formatted code snippet, or None if there's an error.
-    """
-    try:
-        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
-            lines = f.readlines()
-
-        start_line = max(0, line_number - context_lines - 1)  # Adjust for 0-based indexing
-        end_line = min(len(lines), line_number + context_lines)
-
-        snippet_lines = lines[start_line:end_line]
-
-        snippet = "".join(snippet_lines) # changed code to extract string
-
-        return snippet
-    except Exception as e:
-        Log.print_red(f"Error extracting code snippet from {file_path}: {e}")
-        return None
-
 def process_file(file, ai, github, commit_id):
     Log.print_green("Checking file", file)
-
+    
     _, file_extension = os.path.splitext(file)
     file_extension = file_extension.lstrip('.')
     vars = EnvVars()
@@ -84,7 +56,7 @@ def process_file(file, ai, github, commit_id):
     if not file_diffs:
         Log.print_red(f"No diffs found for file: {file}")
         return
-
+    
     Log.print_green(f"Asking AI. Content Len: {len(file_content)}, Diff Len: {len(file_diffs)}")
     response = ai.ai_request_diffs(code=file_content, diffs=file_diffs)
 
@@ -101,12 +73,7 @@ def process_file(file, ai, github, commit_id):
     for response in responses:
         result = False
         if hasattr(response, 'line') and response.line:
-            code_snippet = get_code_snippet(file, response.line)
-            if code_snippet:
-                comment_text = f"{response.text}\n\n```\n{code_snippet}\n```"  # Include snippet in comment
-            else:
-                comment_text = response.text # just response if cannot extract
-            result = post_line_comment(github, file, comment_text, response.line, commit_id)
+            result = post_line_comment(github, file, response.text, response.line, commit_id)
         if not result:
             result = post_general_comment(github, file, response.text, commit_id)
         if not result:
@@ -119,15 +86,15 @@ def post_line_comment(github: GitHub, file: str, text: str, line: int, commit_id
             return False
         if hasattr(github, 'post_comment_to_line'):
             git_response = github.post_comment_to_line(
-                text=text,
-                commit_id=commit_id,
-                file_path=file,
+                text=text, 
+                commit_id=commit_id, 
+                file_path=file, 
                 line=line
             )
         else:
             Log.print_yellow("Method post_comment_to_line not found, using general comment instead")
             return post_general_comment(github, file, f"Line {line}: {text}", commit_id)
-
+        
         Log.print_yellow(f"Posted successfully: {git_response}")
         return True
     except RepositoryError as e:
