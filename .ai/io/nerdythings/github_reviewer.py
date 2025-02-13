@@ -1,5 +1,5 @@
 import os
-from git import Git
+from git import Git 
 from ai.chat_gpt import ChatGPT
 from ai.ai_bot import AiBot
 from log import Log
@@ -14,28 +14,22 @@ def main():
     ai = ChatGPT(vars.chat_gpt_token, vars.chat_gpt_model)
     github = GitHub(vars.token, vars.owner, vars.repo, vars.pull_number) if vars.pull_number else None
 
-    if not github:
-        Log.print_yellow("No associated pull request, skipping comment posting")
+    changed_files = Git.get_diff_files(head_ref=vars.head_ref, base_ref=vars.base_ref)
+    Log.print_yellow(f"DEBUG: Changed files detected: {changed_files}")
+    Log.print_green("Found changes in files", changed_files)
+    
+    if not changed_files:
+        Log.print_red("No changes between commits")
         return
-
-    commits = github.get_commits_in_pr()
-    if not commits:
-        Log.print_red("No commits found in PR")
-        return
-
-    for commit in commits:
-        commit_sha = commit['sha']
-        Log.print_yellow(f"Processing commit: {commit_sha}")
-
-        changed_files = github.get_changed_files_in_commit(commit_sha)
-        if not changed_files:
-            Log.print_red(f"No changes detected in commit {commit_sha}")
-            continue
-
-        Log.print_green(f"Changed files in commit {commit_sha}: {changed_files}")
+    
+    if github:
+        latest_commit_id = vars.head_ref
+        Log.print_yellow(f"Using latest commit SHA: {latest_commit_id}")
 
         for file in changed_files:
-            process_file(file, ai, github, commit_sha)
+            process_file(file, ai, github, latest_commit_id)
+    else:
+        Log.print_yellow("No associated pull request, skipping comment posting")
 
 def process_file(file, ai, github, commit_id):
     Log.print_green("Checking file", file)
@@ -58,11 +52,11 @@ def process_file(file, ai, github, commit_id):
         Log.print_red(f"File is empty: {file}")
         return
 
-    file_diffs = Git.get_diff_in_file(commit_id=commit_id, file_path=file)
+    file_diffs = Git.get_diff_in_file(head_ref=vars.head_ref, base_ref=vars.base_ref, file_path=file)
     if not file_diffs:
         Log.print_red(f"No diffs found for file: {file}")
         return
-
+    
     Log.print_green(f"Asking AI. Content Len: {len(file_content)}, Diff Len: {len(file_diffs)}")
     response = ai.ai_request_diffs(code=file_content, diffs=file_diffs)
 
@@ -111,7 +105,7 @@ def post_general_comment(github: GitHub, file: str, text: str, commit_id: str) -
     Log.print_green(f"Posting general comment on {file}")
     try:
         message = f"{file}\n{text}"
-        git_response = github.post_comment_to_commit(message, commit_id)
+        git_response = github.post_comment_general(message, commit_id)
         Log.print_yellow(f"Posted successfully: {git_response}")
         return True
     except RepositoryError as e:
