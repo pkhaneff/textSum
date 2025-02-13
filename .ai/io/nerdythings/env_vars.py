@@ -72,11 +72,10 @@ class EnvVars:
         required_vars = ["CHATGPT_KEY", "CHATGPT_MODEL", "GITHUB_TOKEN"]
 
         if self.event_name == "pull_request":
-            # Consider pull_number optional
             pass
         elif self.event_name == "push":
-           if not self.owner or not self.repo:
-               raise ValueError("REPO_OWNER and GITHUB_REPOSITORY must be set for push events.")
+            if not self.owner or not self.repo:
+                raise ValueError("REPO_OWNER and GITHUB_REPOSITORY must be set for push events.")
 
         missing_vars = [var for var in required_vars if not getattr(self, var.lower(), None)]
 
