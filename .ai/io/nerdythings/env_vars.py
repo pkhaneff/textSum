@@ -68,9 +68,13 @@ class EnvVars:
         self.pull_number = None 
 
     def check_vars(self):
-        missing_vars = [var for var, value in self.env_vars.items() if not value]
+        required_vars = ["CHATGPT_KEY", "CHATGPT_MODEL", "GITHUB_TOKEN", "REPO_OWNER", "REPO_NAME"]
+        
+        if os.getenv("GITHUB_EVENT_NAME") == "pull_request":
+            required_vars.append("PULL_NUMBER")
+
+        missing_vars = [var for var in required_vars if not getattr(self, var.lower(), None)]
+        
         if missing_vars:
             missing_vars_str = ", ".join(missing_vars)
             raise ValueError(f"The following environment variables are missing or empty: {missing_vars_str}")
-        else:
-            Log.print_green("All required environment variables are set.")
