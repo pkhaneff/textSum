@@ -12,9 +12,12 @@ def main():
     vars.check_vars()
 
     ai = ChatGPT(vars.chat_gpt_token, vars.chat_gpt_model)
-    github = None
-    if os.getenv("GITHUB_EVENT_NAME") == "pull_request" and vars.pull_number:
-        github = GitHub(vars.token, vars.owner, vars.repo, vars.pull_number)
+    if os.getenv("GITHUB_EVENT_NAME") != "pull_request" or not vars.pull_number:
+        Log.print_red("This action only runs on pull request events.")
+        return
+
+    github = GitHub(vars.token, vars.owner, vars.repo, vars.pull_number)
+
 
     changed_files = Git.get_diff_files(head_ref=vars.head_ref, base_ref=vars.base_ref)
     Log.print_yellow(f"DEBUG: Changed files detected: {changed_files}")
