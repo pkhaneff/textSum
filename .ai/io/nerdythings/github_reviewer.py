@@ -13,8 +13,17 @@ def main():
 
     ai = ChatGPT(vars.chat_gpt_token, vars.chat_gpt_model)
     github = None
-    if os.getenv("GITHUB_EVENT_NAME") == "pull_request" and vars.pull_number:
+    event_name = os.getenv("GITHUB_EVENT_NAME")
+
+    # Nếu là Pull Request, sử dụng GitHub API
+    if event_name == "pull_request" and vars.pull_number:
         github = GitHub(vars.token, vars.owner, vars.repo, vars.pull_number)
+
+    # Nếu là push, sử dụng commit mới nhất
+    if event_name == "push":
+        vars.head_ref = os.getenv("GITHUB_SHA")  # Lấy commit mới nhất
+        vars.base_ref = os.getenv("GITHUB_BEFORE")  # Commit trước đó
+        Log.print_yellow(f"Push event detected. HEAD: {vars.head_ref}, BASE: {vars.base_ref}")
 
     changed_files = Git.get_diff_files(head_ref=vars.head_ref, base_ref=vars.base_ref)
     Log.print_yellow(f"DEBUG: Changed files detected: {changed_files}")
@@ -24,14 +33,11 @@ def main():
         Log.print_red("No changes between commits")
         return
     
-    if github:
-        latest_commit_id = vars.head_ref
-        Log.print_yellow(f"Using latest commit SHA: {latest_commit_id}")
+    latest_commit_id = vars.head_ref
+    Log.print_yellow(f"Using latest commit SHA: {latest_commit_id}")
 
-        for file in changed_files:
-            process_file(file, ai, github, latest_commit_id)
-    else:
-        Log.print_yellow("No associated pull request, skipping comment posting")
+    for file in changed_files:
+        process_file(file, ai, github, latest_commit_id)
 
 def process_file(file, ai, github, commit_id):
     Log.print_green("Checking file", file)
@@ -64,7 +70,8 @@ def process_file(file, ai, github, commit_id):
 
     if AiBot.is_no_issues_text(response):
         Log.print_green(f"No issues found in file: {file}")
-        post_general_comment(github, file, "AI review: ✅ No issues detected in this file.", commit_id)
+        if github:
+            post_general_comment(github, file, "AI review: ✅ No issues detected in this file.", commit_id)
         return
 
     responses = AiBot.split_ai_response(response)
@@ -74,9 +81,9 @@ def process_file(file, ai, github, commit_id):
 
     for response in responses:
         result = False
-        if hasattr(response, 'line') and response.line:
+        if hasattr(response, 'line') and response.line and github:
             result = post_line_comment(github, file, response.text, response.line, commit_id)
-        if not result:
+        if not result and github:
             result = post_general_comment(github, file, response.text, commit_id)
         if not result:
             Log.print_red(f"Failed to post comment for file: {file}")
