@@ -10,137 +10,82 @@ from repository.repository import RepositoryError
 def main():
     vars = EnvVars()
     vars.check_vars()
-
+    
+    if os.getenv("GITHUB_EVENT_NAME") != "pull_request" or not vars.pull_number:
+        Log.print_red("Skipping review: No open pull request detected.")
+        return
+    
+    github = GitHub(vars.token, vars.owner, vars.repo, vars.pull_number)
     ai = ChatGPT(vars.chat_gpt_token, vars.chat_gpt_model)
-    github = None
-    event_name = os.getenv("GITHUB_EVENT_NAME")
-
-    if event_name == "pull_request" and vars.pull_number:
-        github = GitHub(vars.token, vars.owner, vars.repo, vars.pull_number)
     
-    if event_name == "push":
-        vars.head_ref = os.getenv("GITHUB_SHA")  
-        vars.base_ref = os.getenv("GITHUB_BEFORE")  
-
-        if not vars.base_ref:
-            Log.print_yellow("GITHUB_BEFORE is not set, using default branch")
-            vars.base_ref = os.getenv("GITHUB_REF_NAME")  
-
-    Log.print_yellow(f"HEAD: {vars.head_ref}, BASE: {vars.base_ref}")
-
-    if not vars.base_ref:
-        Log.print_red("Error: base_ref is None. Cannot get diff.")
+    vars.head_ref = os.getenv("GITHUB_SHA")
+    vars.base_ref = os.getenv("GITHUB_BEFORE") or os.getenv("GITHUB_REF_NAME")
+    
+    if not vars.head_ref or not vars.base_ref:
+        Log.print_red("Skipping review: Missing head_ref or base_ref.")
         return
-
-    if event_name in ["pull_request", "push"] and vars.head_ref and vars.base_ref:
-        changed_files = Git.get_diff_files(head_ref=vars.head_ref, base_ref=vars.base_ref)
-        Log.print_yellow(f"DEBUG: Changed files detected: {changed_files}")
-        Log.print_green("Found changes in files", changed_files)
-        
-        if not changed_files:
-            Log.print_red("No changes between commits")
-            return
-
-        latest_commit_id = vars.head_ref
-        Log.print_yellow(f"Using latest commit SHA: {latest_commit_id}")
-
-        for file in changed_files:
-            process_file(file, ai, github, latest_commit_id)
-    else:
-        Log.print_red("Event is not push or pull_request, or refs are missing")
-    Log.print_yellow(f"DEBUG: Changed files detected: {changed_files}")
-    Log.print_green("Found changes in files", changed_files)
     
+    changed_files = Git.get_diff_files(head_ref=vars.head_ref, base_ref=vars.base_ref)
     if not changed_files:
-        Log.print_red("No changes between commits")
+        Log.print_red("Skipping review: No changes detected in PR.")
         return
     
-    latest_commit_id = vars.head_ref
-    Log.print_yellow(f"Using latest commit SHA: {latest_commit_id}")
-
+    Log.print_green(f"Reviewing {len(changed_files)} changed files in PR #{vars.pull_number}...")
     for file in changed_files:
-        process_file(file, ai, github, latest_commit_id)
+        process_file(file, ai, github, vars.head_ref)
 
 def process_file(file, ai, github, commit_id):
-    Log.print_green("Checking file", file)
-    
+    Log.print_green(f"Checking file: {file}")
     _, file_extension = os.path.splitext(file)
-    file_extension = file_extension.lstrip('.')
     vars = EnvVars()
-    if not vars.target_extensions or file_extension not in vars.target_extensions:
-        Log.print_yellow(f"Skipping unsupported extension: {file_extension} (file {file})")
+    
+    if vars.target_extensions and file_extension.lstrip('.') not in vars.target_extensions:
+        Log.print_yellow(f"Skipping unsupported file type: {file_extension}")
         return
-
+    
     try:
-        with open(file, 'r', encoding="utf-8", errors="replace") as file_opened:
-            file_content = file_opened.read()
+        with open(file, 'r', encoding="utf-8", errors="replace") as f:
+            file_content = f.read()
     except FileNotFoundError:
-        Log.print_yellow(f"File was removed, skipping: {file}")
+        Log.print_yellow(f"File removed, skipping: {file}")
         return
-
+    
     if not file_content:
-        Log.print_red(f"File is empty: {file}")
+        Log.print_red(f"Skipping empty file: {file}")
         return
-
+    
     file_diffs = Git.get_diff_in_file(head_ref=vars.head_ref, base_ref=vars.base_ref, file_path=file)
     if not file_diffs:
         Log.print_red(f"No diffs found for file: {file}")
         return
     
-    Log.print_green(f"Asking AI. Content Len: {len(file_content)}, Diff Len: {len(file_diffs)}")
     response = ai.ai_request_diffs(code=file_content, diffs=file_diffs)
-
     if AiBot.is_no_issues_text(response):
-        Log.print_green(f"No issues found in file: {file}")
-        if github:
-            post_general_comment(github, file, "✅ No issues detected in this file.", commit_id)
+        Log.print_green(f"No issues found in {file}")
+        post_general_comment(github, file, "✅ No issues detected.", commit_id)
         return
+    
+    for response in AiBot.split_ai_response(response):
+        if hasattr(response, 'line') and response.line:
+            if post_line_comment(github, file, response.text, response.line, commit_id):
+                continue
+        post_general_comment(github, file, response.text, commit_id)
 
-    responses = AiBot.split_ai_response(response)
-    if not responses:
-        Log.print_red(f"AI response parsing failed: {responses}")
-        return
-
-    for response in responses:
-        result = False
-        if hasattr(response, 'line') and response.line and github:
-            result = post_line_comment(github, file, response.text, response.line, commit_id)
-        if not result and github:
-            result = post_general_comment(github, file, response.text, commit_id)
-        if not result:
-            Log.print_red(f"Failed to post comment for file: {file}")
-
-def post_line_comment(github: GitHub, file: str, text: str, line: int, commit_id: str):
+def post_line_comment(github, file, text, line, commit_id):
     Log.print_green(f"Posting line comment on {file}:{line}")
     try:
-        if not github:
-            return False
-        if hasattr(github, 'post_comment_to_line'):
-            git_response = github.post_comment_to_line(
-                text=text, 
-                commit_id=commit_id, 
-                file_path=file, 
-                line=line
-            )
-        else:
-            Log.print_yellow("Method post_comment_to_line not found, using general comment instead")
-            return post_general_comment(github, file, f"Line {line}: {text}", commit_id)
-        
-        Log.print_yellow(f"Posted successfully: {git_response}")
-        return True
+        return github.post_comment_to_line(text, commit_id, file, line)
     except RepositoryError as e:
-        Log.print_red(f"Failed line comment for {file}:{line} -> {e}")
+        Log.print_red(f"Failed line comment on {file}:{line} -> {e}")
         return False
 
-def post_general_comment(github: GitHub, file: str, text: str, commit_id: str) -> bool:
+def post_general_comment(github, file, text, commit_id):
     Log.print_green(f"Posting general comment on {file}")
     try:
         message = f"{file}\n{text}"
-        git_response = github.post_comment_general(message, commit_id)
-        Log.print_yellow(f"Posted successfully: {git_response}")
-        return True
+        return github.post_comment_general(message, commit_id)
     except RepositoryError as e:
-        Log.print_red(f"Failed general comment for {file} -> {e}")
+        Log.print_red(f"Failed general comment on {file} -> {e}")
         return False
 
 if __name__ == "__main__":

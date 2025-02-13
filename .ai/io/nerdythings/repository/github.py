@@ -2,81 +2,57 @@ import requests
 from repository.repository import Repository, RepositoryError
 
 class GitHub(Repository):
-
     def __init__(self, token: str, repo_owner: str, repo_name: str, pull_number: str = None):
         self.token = token
         self.repo_owner = repo_owner
         self.repo_name = repo_name
         self.pull_number = pull_number
-        self.__header_accept_json = { "Authorization": f"token {token}" }
-        self.__header_authorization = { "Accept": "application/vnd.github.v3+json" }
-        self.__url_add_comment = f"https://api.github.com/repos/{repo_owner}/{repo_name}/pulls/{pull_number}/comments"
-        self.__url_add_issue = f"https://api.github.com/repos/{repo_owner}/{repo_name}/issues/{pull_number}/comments"
-
-    def post_comment_to_line(self, text: str, commit_id: str, file_path: str, line: int):
-        headers = self.__header_accept_json | self.__header_authorization
-        body = {
-            "body": text,
-            "commit_id": commit_id,
-            "path": file_path,
-            "position": line
+        self.headers = {
+            "Authorization": f"token {token}",
+            "Accept": "application/vnd.github.v3+json"
         }
-        response = requests.post(self.__url_add_comment, json=body, headers=headers)
-        if response.status_code in [200, 201]:
-            return response.json()
-        else:
-            raise RepositoryError(f"Error with line comment {response.status_code} : {response.text}")
-    
-    def post_comment_general(self, text, commit_id=None):
-        headers = self.__header_accept_json | self.__header_authorization
-        body = { "body": text }
-        if commit_id:
-            body["commit_id"] = commit_id
 
-        response = requests.post(self.__url_add_issue, json=body, headers=headers)
-        if response.status_code in [200, 201]:
-            return response.json()
-        else:
-            raise RepositoryError(f"Error with general comment {response.status_code} : {response.text}")
+    def _get_open_pull_requests(self):
+        url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/pulls?state=open"
+        response = requests.get(url, headers=self.headers)
+        if response.status_code != 200:
+            raise RepositoryError(f"Error fetching pull requests {response.status_code}: {response.text}")
+        return response.json()
+    
+    def _get_matching_pr(self):
+        pull_requests = self._get_open_pull_requests()
+        return next((pr for pr in pull_requests if pr["number"] == int(self.pull_number)), None)
     
     def get_latest_commit_id(self) -> str:
-        # Lấy danh sách tất cả các PR mở
-        url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/pulls?state=open"
-        headers = self.__header_accept_json | self.__header_authorization
+        matching_pr = self._get_matching_pr()
+        if not matching_pr:
+            raise RepositoryError(f"No matching open PR found for {self.pull_number}.")
 
-        response = requests.get(url, headers=headers)
-        if response.status_code == 200:
-            pull_requests = response.json()
-            if not pull_requests:
-                raise RepositoryError("No open pull requests found.")
+        commits_response = requests.get(matching_pr["commits_url"], headers=self.headers)
+        if commits_response.status_code != 200:
+            raise RepositoryError(f"Error fetching commits {commits_response.status_code}: {commits_response.text}")
 
-            # Tìm PR có nhánh head trùng với pull request đang làm việc
-            matching_pr = next(
-                (pr for pr in pull_requests if pr["number"] == int(self.pull_number)),
-                None
-            )
-
-
-            if not matching_pr:
-                raise RepositoryError(f"No matching open PR found for branch {self.pull_number}.")
-
-            print(f"Pull requests fetched: {[pr['number'] for pr in pull_requests]}")
-            print(f"Checking for PR number: {self.pull_number} (type: {type(self.pull_number)})")
-
-            # Lấy commit mới nhất của PR đó
-            commits_url = matching_pr["commits_url"]
-            commits_response = requests.get(commits_url, headers=headers)
-            if commits_response.status_code == 200:
-                commits = commits_response.json()
-                if commits:
-                    return commits[-1]["sha"]  # Lấy commit cuối cùng (mới nhất)
-                else:
-                    raise RepositoryError("No commits found in this pull request.")
-            else:
-                raise RepositoryError(f"Error fetching commits {commits_response.status_code}: {commits_response.text}")
-
-        else:
-            raise RepositoryError(f"Error fetching pull requests {response.status_code}: {response.text}")
-
-
+        commits = commits_response.json()
+        if not commits:
+            raise RepositoryError("No commits found in this pull request.")
+        return commits[-1]["sha"]
     
+    def post_comment(self, text: str, commit_id: str = None, file_path: str = None, line: int = None):
+        if not self.pull_number or not self._get_matching_pr():
+            raise RepositoryError("No open PR found. Cannot post comment.")
+        
+        url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/issues/{self.pull_number}/comments"
+        body = {"body": text}
+        
+        if commit_id and file_path and line is not None:
+            url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/pulls/{self.pull_number}/comments"
+            body.update({
+                "commit_id": commit_id,
+                "path": file_path,
+                "position": line
+            })
+        
+        response = requests.post(url, json=body, headers=self.headers)
+        if response.status_code not in [200, 201]:
+            raise RepositoryError(f"Error posting comment {response.status_code}: {response.text}")
+        return response.json()
