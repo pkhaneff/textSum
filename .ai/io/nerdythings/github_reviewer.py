@@ -36,7 +36,22 @@ def main():
         Log.print_red("Error: base_ref is None. Cannot get diff.")
         return
 
-    changed_files = Git.get_diff_files(head_ref=vars.head_ref, base_ref=vars.base_ref)
+    if event_name in ["pull_request", "push"] and vars.head_ref and vars.base_ref:
+        changed_files = Git.get_diff_files(head_ref=vars.head_ref, base_ref=vars.base_ref)
+        Log.print_yellow(f"DEBUG: Changed files detected: {changed_files}")
+        Log.print_green("Found changes in files", changed_files)
+        
+        if not changed_files:
+            Log.print_red("No changes between commits")
+            return
+
+        latest_commit_id = vars.head_ref
+        Log.print_yellow(f"Using latest commit SHA: {latest_commit_id}")
+
+        for file in changed_files:
+            process_file(file, ai, github, latest_commit_id)
+    else:
+        Log.print_red("Event is not push or pull_request, or refs are missing")
     Log.print_yellow(f"DEBUG: Changed files detected: {changed_files}")
     Log.print_green("Found changes in files", changed_files)
     
