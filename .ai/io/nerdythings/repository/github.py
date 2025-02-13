@@ -38,9 +38,18 @@ class GitHub(Repository):
             return response.json()
         else:
             raise RepositoryError(f"Error with general comment {response.status_code} : {response.text}")
+        
+    def get_commits_in_pr(self):
+        url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/pulls/{self.pull_number}/commits"
+        headers = self.__header_accept_json | self.__header_authorization
+        
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            return response.json() 
+        else:
+            raise RepositoryError(f"Error fetching PR commits {response.status_code}: {response.text}")
     
     def get_latest_commit_id(self) -> str:
-        # Lấy danh sách tất cả các PR mở
         url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/pulls?state=open"
         headers = self.__header_accept_json | self.__header_authorization
 
@@ -50,12 +59,10 @@ class GitHub(Repository):
             if not pull_requests:
                 raise RepositoryError("No open pull requests found.")
 
-            # Tìm PR có nhánh head trùng với pull request đang làm việc
             matching_pr = next(
                 (pr for pr in pull_requests if pr["number"] == int(self.pull_number)),
                 None
             )
-
 
             if not matching_pr:
                 raise RepositoryError(f"No matching open PR found for branch {self.pull_number}.")
@@ -63,13 +70,12 @@ class GitHub(Repository):
             print(f"Pull requests fetched: {[pr['number'] for pr in pull_requests]}")
             print(f"Checking for PR number: {self.pull_number} (type: {type(self.pull_number)})")
 
-            # Lấy commit mới nhất của PR đó
             commits_url = matching_pr["commits_url"]
             commits_response = requests.get(commits_url, headers=headers)
             if commits_response.status_code == 200:
                 commits = commits_response.json()
                 if commits:
-                    return commits[-1]["sha"]  # Lấy commit cuối cùng (mới nhất)
+                    return commits[-1]["sha"]  
                 else:
                     raise RepositoryError("No commits found in this pull request.")
             else:
