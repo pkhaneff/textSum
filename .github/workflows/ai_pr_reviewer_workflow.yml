@@ -44,6 +44,10 @@ jobs:
           REPO_NAME: ${{ github.event.repository.name }}
           BASE_REF: ${{ github.event.pull_request.base.sha || env.BASE_REF }}
           HEAD_REF: ${{ github.event.pull_request.head.sha || github.sha }}
-          PULL_NUMBER: ${{ github.event.number || '0' }}
+          PULL_NUMBER: ${{ github.event.pull_request.number || '' }}
+      - name: Debug Environment Variables
+        run: |
+            echo "GITHUB_EVENT_NAME=${{ github.event_name }}"
+            echo "PULL_NUMBER=${{ github.event.pull_request.number }}"
         run: |
           python .ai/io/nerdythings/github_reviewer.py
