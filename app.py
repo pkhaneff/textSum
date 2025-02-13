@@ -21,7 +21,7 @@ model = model.to("cpu")
 class DialogueInput(BaseModel):
     dialogue: str
 
-def clean_text(text: str) -> str:
+def clean_text() -> str:
     text = re.sub(r'\r\n|\n', '\n', text)
     text = re.sub(r'[ \t]+', ' ', text)
     text = re.sub(r'<.*?>', '', text)
