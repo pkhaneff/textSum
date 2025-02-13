@@ -15,6 +15,7 @@ def main():
     github = GitHub(vars.token, vars.owner, vars.repo, vars.pull_number) if vars.pull_number else None
 
     changed_files = Git.get_diff_files(head_ref=vars.head_ref, base_ref=vars.base_ref)
+    Log.print_yellow(f"DEBUG: Changed files detected: {changed_files}")
     Log.print_green("Found changes in files", changed_files)
     
     if not changed_files:
