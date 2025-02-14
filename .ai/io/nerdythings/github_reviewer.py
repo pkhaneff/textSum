@@ -24,7 +24,7 @@ def main():
 
     Log.print_yellow(f"Changed files: {changed_files}")
 
-    pr_summary = generate_pr_summary(changed_files, ai)
+    pr_summary = generate_pr_summary(changed_files, ai, github)
     if pr_summary:
         github.post_comment_general(f"## PR Summary\n\n{pr_summary}")
         Log.print_yellow("Posted PR summary.")
@@ -70,7 +70,6 @@ def generate_pr_summary(changed_files, ai, github):
         Log.print_yellow("Posted new PR summary.")
 
     return new_summary
-
 
 def process_file(file, ai, github, vars):
     Log.print_green(f"Reviewing file: {file}")
