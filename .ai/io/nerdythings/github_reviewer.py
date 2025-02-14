@@ -11,7 +11,7 @@ def main():
     vars.check_vars()
 
     if os.getenv("GITHUB_EVENT_NAME") != "pull_request" or not vars.pull_number:
-        Log.print_red("\ud83d\udeab This action only runs on pull request events.")
+        Log.print_red("This action only runs on pull request events.")
         return
 
     github = GitHub(vars.token, vars.owner, vars.repo, vars.pull_number)
@@ -19,15 +19,15 @@ def main():
 
     changed_files = Git.get_diff_files(head_ref=vars.head_ref, base_ref=vars.base_ref)
     if not changed_files:
-        Log.print_red("\ud83d\udd0d No changes detected.")
+        Log.print_red("No changes detected.")
         return
 
-    Log.print_yellow(f"\ud83d\udcc2 Changed files: {changed_files}")
+    Log.print_yellow(f"Changed files: {changed_files}")
 
     pr_summary = generate_pr_summary(changed_files, ai)
     if pr_summary:
-        github.post_comment_general(f"## \ud83d\udd0d PR Summary\n\n{pr_summary}")
-        Log.print_yellow("\ud83d\udcac Posted PR summary.")
+        github.post_comment_general(f"##PR Summary\n\n{pr_summary}")
+        Log.print_yellow("Posted PR summary.")
 
     for file in changed_files:
         process_file(file, ai, github, vars)
@@ -36,7 +36,7 @@ def generate_pr_summary(changed_files, ai):
     """
     Tổng hợp nội dung PR dựa trên các file thay đổi.
     """
-    Log.print_green("\ud83d\udcca Generating PR summary...")
+    Log.print_green("Generating PR summary...")
 
     file_contents = []
     for file in changed_files:
@@ -55,7 +55,7 @@ def generate_pr_summary(changed_files, ai):
     return ai.ai_request_summary(code=full_context) 
 
 def process_file(file, ai, github, vars):
-    Log.print_green(f"\ud83d\udcc4 Reviewing file: {file}")
+    Log.print_green(f"Reviewing file: {file}")
 
     try:
         with open(file, 'r', encoding="utf-8", errors="replace") as f:
@@ -69,7 +69,7 @@ def process_file(file, ai, github, vars):
         Log.print_red(f"❌ No diffs found for: {file}")
         return
 
-    Log.print_green(f"\ud83e\udd16 AI analyzing changes in {file}...")
+    Log.print_green(f" AI analyzing changes in {file}...")
     response = ai.ai_request_diffs(code=file_content, diffs=file_diffs)
 
     handle_ai_response(response, github, file, file_diffs)
