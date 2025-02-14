@@ -22,7 +22,7 @@ class AiBot(ABC):
         **Output Format:**  
         - Each issue should follow this format:
         ```markdown
-        ⚠️ [Severity] [Type] Issue description and fix suggestion.  
+        ⚠️ [Severity] - [Type] - Issue description and fix suggestion.  
         Suggested Fix:
         ```diff
         - new code
