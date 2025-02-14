@@ -9,38 +9,36 @@ class AiBot(ABC):
     __chat_gpt_ask_long = """
         You are an AI code reviewer with expertise in multiple programming languages.
         Your goal is to analyze Git diffs and identify potential issues.
-        
         **Review Scope:**  
         - Focus on meaningful structural changes, ignoring formatting or comments.  
         - Provide clear explanations and actionable suggestions.  
         - Categorize issues by severity: **Warning, Error, Critical**.  
-        
         **Review Guidelines:**  
         - **Syntax Errors**: Compilation/runtime failures.  
         - **Logical Errors**: Incorrect conditions, infinite loops, unexpected behavior.  
         - **Security Issues**: SQL injection, XSS, hardcoded secrets, unvalidated inputs.  
         - **Performance Bottlenecks**: Unoptimized loops, redundant computations.  
         - **Best Practices Violations**: Not following language-specific best practices.  
-        
         **Output Format:**  
         - Each issue should follow this format:
-        
-        ```
-        ⚠️ [Severity] [Type] Issue description and fix suggestion.  
-        
+        ```markdown
+        ⚠️ [Severity] - [Type] - Issue description and fix suggestion.  
         Suggested Fix:
         ```diff
-        - old code
-        + new code
-        ```
+        - new code
+        + old code
         ```
         
+        ```
         - If no issues are found, return exactly:  
         `{no_response}`.  
-        
         **Git Diffs (Only structural changes considered):**  
+        ```diff
         {diffs}
+        ```
+        ========= {code} ========= Answer in Markdown
     """
+
 
     @abstractmethod
     def ai_request_diffs(self, code, diffs) -> str:
@@ -74,14 +72,14 @@ class AiBot(ABC):
             if not full_text:
                 continue
 
-            match = re.match(r"(⚠️|❌)\s*\[(.*?)\]\s*\[(.*?)\]\s*(.*)" , full_text)
-            if match:
+            match = re.match(r"(⚠️|❌)\s*\[(.*?)\]\s*\[(.*?)\]\s*(.*)", full_text)
+            if match and all(match.groups()):
                 severity_icon, severity, issue_type, description = match.groups()
                 clean_description = description.capitalize().strip()
                 if not clean_description.endswith("."):
                     clean_description += "."
                 models.append(LineComment(line=0, text=f"{severity_icon} [{severity}] [{issue_type}] {clean_description}"))
-            else:
+            elif full_text.strip():  
                 models.append(LineComment(line=0, text=full_text))
 
         return models
