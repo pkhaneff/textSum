@@ -28,7 +28,7 @@ def clean_text(text: str) -> str:
     text = '\n'.join([line.strip() for line in text.split('\n') if line.strip()])
     return text.lower()
 
-def summarize_dialogue(dialogue: str) -> str:
+def summarize_dialogue(: str) -> str:
     dialogue = clean_text(dialogue)
     inputs = tokenizer(dialogue, return_tensors="pt", truncation=True, padding="max_length", max_length=512)
 
@@ -44,4 +44,4 @@ def summarize_dialogue(dialogue: str) -> str:
 @app.post('/summarize/')
 async def summarize(dialogue_input: DialogueInput):
     summary = summarize_dialogue(dialogue_input.dialogue)
-    return {'summary': summary}
+    return {'summary': result}
