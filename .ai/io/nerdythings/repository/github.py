@@ -13,6 +13,19 @@ class GitHub(Repository):
         self.__url_add_comment = f"https://api.github.com/repos/{repo_owner}/{repo_name}/pulls/{pull_number}/comments"
         self.__url_add_issue = f"https://api.github.com/repos/{repo_owner}/{repo_name}/issues/{pull_number}/comments"
 
+    def update_comment(self, comment_id: str, new_body: str):
+        """Cập nhật một comment trên PR bằng API GitHub."""
+        url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/issues/comments/{comment_id}"
+        headers = self.__header_accept_json | self.__header_authorization
+        body = { "body": new_body }
+
+        response = requests.patch(url, json=body, headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise RepositoryError(f"Error updating comment {response.status_code}: {response.text}")
+
     def get_comments(self):
         """Lấy tất cả các comment trên PR."""
         headers = self.__header_accept_json | self.__header_authorization
