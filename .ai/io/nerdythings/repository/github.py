@@ -102,13 +102,15 @@ class GitHub(Repository):
 
     def get_pull_request(self):
         url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/pulls/{self.pull_number}"
-        response = requests.get(url, headers=self.headers)
+        headers = self.__header_accept_json | self.__header_authorization  
+        response = requests.get(url, headers=headers)
         return response.json()
 
     def update_pull_request(self, new_body):
         url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/pulls/{self.pull_number}"
+        headers = self.__header_accept_json | self.__header_authorization
         data = {"body": new_body}
-        response = requests.patch(url, json=data, headers=self.headers)
+        response = requests.patch(url, json=data, headers=headers)
         return response.json()
 
     
