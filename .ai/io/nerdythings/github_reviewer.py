@@ -2,11 +2,9 @@ import os
 from git import Git
 from ai.chat_gpt import ChatGPT
 from log import Log
-import asyncio
 from env_vars import EnvVars
 from repository.github import GitHub
 from repository.repository import RepositoryError
-
 
 def main():
     vars = EnvVars()
@@ -26,12 +24,10 @@ def main():
 
     Log.print_yellow(f"📂 Changed files: {changed_files}")
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    tasks = [process_file(file, ai, github, vars) for file in changed_files]
-    loop.run_until_complete(asyncio.gather(*tasks))
+    for file in changed_files:
+        process_file(file, ai, github, vars)
 
-async def process_file(file, ai, github, vars):
+def process_file(file, ai, github, vars):
     Log.print_green(f"📄 Reviewing file: {file}")
 
     try:
@@ -47,9 +43,8 @@ async def process_file(file, ai, github, vars):
         return
 
     Log.print_green(f"🤖 AI analyzing changes in {file}...")
-    
-    response = await ai.ai_request_diffs(code=file_content, diffs=file_diffs)  # ✅ Đúng: sử dụng await
-    
+    response = ai.ai_request_diffs(code=file_content, diffs=file_diffs)
+
     handle_ai_response(response, github, file, file_diffs)
 
 def handle_ai_response(response, github, file, file_diffs):
@@ -63,6 +58,7 @@ def handle_ai_response(response, github, file, file_diffs):
         Log.print_red(f"⚠️ Failed to parse AI suggestions for `{file}`.")
         return
 
+    # 🛠 Gộp lỗi và đề xuất sửa lỗi vào một comment duy nhất
     comment_body = f"### 📌 AI Review for `{file}`\n\n"
     for suggestion in suggestions:
         comment_body += f"- {suggestion.strip()}\n"
