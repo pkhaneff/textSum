@@ -25,7 +25,7 @@ class AiBot(ABC):
         **Output Format:**  
         - Each issue should follow this format:
         
-        ```
+        ```markdown
         ⚠️ [Severity] [Type] Issue description and fix suggestion.  
         
         Suggested Fix:
@@ -37,10 +37,15 @@ class AiBot(ABC):
         
         - If no issues are found, return exactly:  
         `{no_response}`.  
-        
+
         **Git Diffs (Only structural changes considered):**  
+        ```diff
         {diffs}
+        ```
+
+        ========= {code} ========= Answer in Markdown
     """
+
 
     @abstractmethod
     def ai_request_diffs(self, code, diffs) -> str:
