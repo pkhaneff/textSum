@@ -17,9 +17,9 @@ class ChatGPT(AiBot):
                 model=self.__chat_gpt_model,
                 stream=False,
             )
-            
+
             if response.choices and len(response.choices) > 0:
-                return response.choices[0].message["content"].strip()
+                return response.choices[0].message.content.strip()  
             else:
                 return "No response from AI."
         except Exception as e:
