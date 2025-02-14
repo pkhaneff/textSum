@@ -11,7 +11,7 @@ class ChatGPT(AiBot):
 
     async def ai_request_diffs(self, code, diffs, timeout=30):
         try:
-            stream = await asyncio.wait_for(
+            completion = await asyncio.wait_for(
                 self.__client.chat.completions.create(
                     messages=[
                         {
@@ -20,15 +20,11 @@ class ChatGPT(AiBot):
                         }
                     ],
                     model=self.__chat_gpt_model,
-                    stream=True,
+                    stream=False, 
                 ),
-                timeout=timeout  # Timeout để tránh đợi mãi mãi
+                timeout=timeout  
             )
-            content = []
-            async for chunk in stream:
-                if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
-                    content.append(chunk.choices[0].delta.content)
-            return " ".join(content)
+            return completion.choices[0].message.content
         except asyncio.TimeoutError:
             print("Request timeout! AI response took too long.")
             return "AI response timed out."
