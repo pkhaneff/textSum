@@ -24,7 +24,7 @@ class ChatGPT(AiBot):
             print(f"API Error: {e}")
         for chunk in stream:
             print(f"Chunk received: {chunk}")
-            if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
-                content.append(chunk.choices[0].delta.content)
+            if chunk.choices and len(chunk.choices) > 0 and hasattr(chunk.choices[0], 'delta') and chunk.choices[0].delta and hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
+                content.append(chunk.choices[0].delta.content)  
         return " ".join(content)
     
