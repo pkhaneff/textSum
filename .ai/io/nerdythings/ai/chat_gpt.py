@@ -22,7 +22,7 @@ class ChatGPT(AiBot):
                     model=self.__chat_gpt_model,
                     stream=True,
                 ),
-                timeout=timeout
+                timeout=timeout  # Timeout để tránh đợi mãi mãi
             )
             content = []
             async for chunk in stream:

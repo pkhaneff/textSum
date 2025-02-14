@@ -1,5 +1,3 @@
-
-
 from abc import ABC, abstractmethod
 import re
 from ai.line_comment import LineComment
@@ -7,42 +5,42 @@ from ai.line_comment import LineComment
 class AiBot(ABC):
     
     __no_response = "No critical issues found"
-    __problems = "errors, issues, potential crashes, or unhandled exceptions"
+    __problems = "errors, security issues, performance bottlenecks, or bad practices"
     __chat_gpt_ask_long = """
-        You are an AI code reviewer specializing in identifying issues in modified code. Your task is to analyze **only meaningful code changes** from the Git diffs and report any issues.  
-
-        **Review Scope:**  
-        - **Only analyze files with structural code changes.** Ignore files where only comments or formatting have changed.  
-        - **Focus on logic modifications.** Skip unchanged lines and purely stylistic adjustments.  
-
-        **Review Guidelines:**  
-        - **Analyze only the changed lines.** Ignore unchanged code.  
-        - **Ignore formatting-only changes.** Focus on logic, syntax, security, and performance.  
-        - **Ensure accuracy.** Each issue must be directly linked to a modified line.  
-
-        **Issue Categories:**  
-        - **Syntax Errors**: Mistakes that cause compilation or runtime failures.  
-        - **Logical Errors**: Incorrect logic, unintended behavior, or edge cases.  
-        - **Security Issues**: Vulnerabilities like SQL injection, XSS, or unsafe operations.  
-        - **Performance Bottlenecks**: Inefficient algorithms, redundant operations, or excessive resource use.  
-
-        **Strict Output Format:**  
-        line_number : [Type] Description of the issue and potential impact.  
-        **Example:**  
-        42 : [Logic] if condition always evaluates to true, causing an unintended infinite loop.  
-        78 : [Security] Potential SQL injection due to missing parameterized query.  
-        103 : [Performance] Nested loop increases time complexity unnecessarily.  
-
-        - If no issues are found in the modified code, return exactly:  
+        You are an AI code reviewer with expertise in multiple programming languages.
+        Your goal is to analyze Git diffs and identify potential issues.
         
+        **Review Scope:**  
+        - Focus on meaningful structural changes, ignoring formatting or comments.  
+        - Provide clear explanations and actionable suggestions.  
+        - Categorize issues by severity: **Warning, Error, Critical**.  
+        
+        **Review Guidelines:**  
+        - **Syntax Errors**: Compilation/runtime failures.  
+        - **Logical Errors**: Incorrect conditions, infinite loops, unexpected behavior.  
+        - **Security Issues**: SQL injection, XSS, hardcoded secrets, unvalidated inputs.  
+        - **Performance Bottlenecks**: Unoptimized loops, redundant computations.  
+        - **Best Practices Violations**: Not following language-specific best practices.  
+        
+        **Output Format:**  
+        - Each issue should follow this format:
+        
+        ```
+        ⚠️ [Severity] [Type] Issue description and fix suggestion.  
+        
+        Suggested Fix:
+        ```diff
+        - old code
+        + new code
+        ```
+        ```
+        
+        - If no issues are found, return exactly:  
         `{no_response}`.  
-
+        
         **Git Diffs (Only structural changes considered):**  
-
         {diffs}
     """
-
-
 
     @abstractmethod
     def ai_request_diffs(self, code, diffs) -> str:
@@ -51,10 +49,10 @@ class AiBot(ABC):
     @staticmethod
     def build_ask_text(code, diffs) -> str:
         return AiBot.__chat_gpt_ask_long.format(
-            problems = AiBot.__problems,
-            no_response = AiBot.__no_response,
-            diffs = diffs,
-            code = code,
+            problems=AiBot.__problems,
+            no_response=AiBot.__no_response,
+            diffs=diffs,
+            code=code,
         )
 
     @staticmethod
@@ -76,22 +74,14 @@ class AiBot(ABC):
             if not full_text:
                 continue
 
-            match = re.match(r"(\d+)\s*:\s*\[(.*?)\]\s*(.*)", full_text)
+            match = re.match(r"(⚠️|❌)\s*\[(.*?)\]\s*\[(.*?)\]\s*(.*)" , full_text)
             if match:
-                line_number, issue_type, description = match.groups()
-
-                if "potential" in description.lower() and "consider" not in description.lower():
-                    continue  
-
+                severity_icon, severity, issue_type, description = match.groups()
                 clean_description = description.capitalize().strip()
                 if not clean_description.endswith("."):
                     clean_description += "."
-
-                models.append(LineComment(line=int(line_number), text=f"[{issue_type}] {clean_description}"))
+                models.append(LineComment(line=0, text=f"{severity_icon} [{severity}] [{issue_type}] {clean_description}"))
             else:
                 models.append(LineComment(line=0, text=full_text))
 
         return models
-
-
-    
