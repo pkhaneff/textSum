@@ -28,6 +28,7 @@ class AiBot(ABC):
         - new code
         + old code
         ```
+        
         ```
         - If no issues are found, return exactly:  
         `{no_response}`.  
