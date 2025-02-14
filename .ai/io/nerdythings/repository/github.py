@@ -101,12 +101,12 @@ class GitHub(Repository):
             raise RepositoryError(f"Error fetching pull requests {response.status_code}: {response.text}")
 
     def get_pull_request(self):
-        url = f"https://api.github.com/repos/{self.owner}/{self.repo}/pulls/{self.pull_number}"
+        url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/pulls/{self.pull_number}"
         response = requests.get(url, headers=self.headers)
         return response.json()
 
     def update_pull_request(self, new_body):
-        url = f"https://api.github.com/repos/{self.owner}/{self.repo}/pulls/{self.pull_number}"
+        url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/pulls/{self.pull_number}"
         data = {"body": new_body}
         response = requests.patch(url, json=data, headers=self.headers)
         return response.json()
