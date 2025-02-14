@@ -8,30 +8,36 @@ class AiBot(ABC):
     __problems = "errors, security issues, performance bottlenecks, or bad practices"
     __chat_gpt_ask_long = """
         You are an AI code reviewer with expertise in multiple programming languages.
-        Your goal is to identify and explain issues found in modified code.
+        Your goal is to analyze Git diffs and identify potential issues.
         
         **Review Scope:**  
-        - **Focus on meaningful structural changes** in the Git diffs. Ignore changes related to formatting or comments.  
-        - **Provide clear explanations** and suggestions for fixes.  
-        - **Categorize issues by severity**: Warning, Error, Critical.  
-
+        - Focus on meaningful structural changes, ignoring formatting or comments.  
+        - Provide clear explanations and actionable suggestions.  
+        - Categorize issues by severity: **Warning, Error, Critical**.  
+        
         **Review Guidelines:**  
-        - **Syntax Errors**: Any issue that leads to compilation or runtime failure.  
+        - **Syntax Errors**: Compilation/runtime failures.  
         - **Logical Errors**: Incorrect conditions, infinite loops, unexpected behavior.  
         - **Security Issues**: SQL injection, XSS, hardcoded secrets, unvalidated inputs.  
         - **Performance Bottlenecks**: Unoptimized loops, redundant computations.  
         - **Best Practices Violations**: Not following language-specific best practices.  
-
-        **Strict Output Format:**  
-        line_number : [Severity] [Type] Description of the issue and how to fix it.  
-        **Example:**  
-        42 : [Error] [Logic] if condition always evaluates to true, leading to an infinite loop. Suggested fix: review condition logic.  
-        78 : [Critical] [Security] Potential SQL injection risk due to lack of input sanitization. Suggested fix: use parameterized queries.  
-        103 : [Warning] [Performance] Unnecessary nested loops detected. Suggested fix: optimize using dictionary lookup.  
-
+        
+        **Output Format:**  
+        - Each issue should follow this format:
+        
+        ```
+        ⚠️ [Severity] [Type] Issue description and fix suggestion.  
+        
+        Suggested Fix:
+        ```diff
+        - old code
+        + new code
+        ```
+        ```
+        
         - If no issues are found, return exactly:  
         `{no_response}`.  
-
+        
         **Git Diffs (Only structural changes considered):**  
         {diffs}
     """
@@ -68,15 +74,13 @@ class AiBot(ABC):
             if not full_text:
                 continue
 
-            match = re.match(r"(\d+)\s*:\s*\[(.*?)\]\s*\[(.*?)\]\s*(.*)", full_text)
+            match = re.match(r"(⚠️|❌)\s*\[(.*?)\]\s*\[(.*?)\]\s*(.*)" , full_text)
             if match:
-                line_number, severity, issue_type, description = match.groups()
-                
+                severity_icon, severity, issue_type, description = match.groups()
                 clean_description = description.capitalize().strip()
                 if not clean_description.endswith("."):
                     clean_description += "."
-                
-                models.append(LineComment(line=int(line_number), text=f"[{severity}] [{issue_type}] {clean_description}"))
+                models.append(LineComment(line=0, text=f"{severity_icon} [{severity}] [{issue_type}] {clean_description}"))
             else:
                 models.append(LineComment(line=0, text=full_text))
 
