@@ -34,7 +34,7 @@ def main():
 
 def generate_pr_summary(changed_files, ai, github):
     """
-    Tổng hợp nội dung PR dựa trên các file thay đổi, cập nhật nếu PR summary đã tồn tại.
+    Tổng hợp nội dung PR dựa trên các file thay đổi, cập nhật PR description nếu đã tồn tại.
     """
     Log.print_green("Generating PR summary...")
 
@@ -54,20 +54,15 @@ def generate_pr_summary(changed_files, ai, github):
     full_context = "\n\n".join(file_contents)
     new_summary = ai.ai_request_summary(code=full_context)
 
-    comments = github.get_comments()
-    summary_comment = None
+    # Lấy thông tin PR hiện tại
+    pr_data = github.get_pull_request()
+    existing_body = pr_data["body"] if pr_data["body"] else ""
 
-    for comment in comments:
-        if comment["body"].startswith("## PR Summary"):
-            summary_comment = comment
-            break
+    # Nếu PR đã có nội dung, thì append thêm thay vì thay thế
+    updated_body = f"{existing_body}\n\n## PR Summary\n\n{new_summary}"
 
-    if summary_comment:
-        github.update_comment(summary_comment["id"], f"## PR Summary\n\n{new_summary}")
-        Log.print_yellow("Updated existing PR summary.")
-    else:
-        github.post_comment_general(f"## PR Summary\n\n{new_summary}")
-        Log.print_yellow("Posted new PR summary.")
+    github.update_pull_request(updated_body)
+    Log.print_yellow("Updated PR description with PR summary.")
 
     return new_summary
 
