@@ -13,6 +13,16 @@ class GitHub(Repository):
         self.__url_add_comment = f"https://api.github.com/repos/{repo_owner}/{repo_name}/pulls/{pull_number}/comments"
         self.__url_add_issue = f"https://api.github.com/repos/{repo_owner}/{repo_name}/issues/{pull_number}/comments"
 
+    def get_comments(self):
+        """Lấy tất cả các comment trên PR."""
+        headers = self.__header_accept_json | self.__header_authorization
+        response = requests.get(self.__url_add_issue, headers=headers)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise RepositoryError(f"Error fetching comments {response.status_code}: {response.text}")
+
     def post_comment_to_line(self, text: str, commit_id: str, file_path: str, line: int):
         headers = self.__header_accept_json | self.__header_authorization
         body = {
