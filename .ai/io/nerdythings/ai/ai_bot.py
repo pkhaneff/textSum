@@ -25,8 +25,8 @@ class AiBot(ABC):
         ⚠️ [Severity] [Type] Issue description and fix suggestion.  
         Suggested Fix:
         ```diff
-        - old code
-        + new code
+        - new code
+        + old code
         ```
         ```
         - If no issues are found, return exactly:  
