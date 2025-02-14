@@ -32,9 +32,9 @@ def main():
     for file in changed_files:
         process_file(file, ai, github, vars)
 
-def generate_pr_summary(changed_files, ai):
+def generate_pr_summary(changed_files, ai, github):
     """
-    Tổng hợp nội dung PR dựa trên các file thay đổi.
+    Tổng hợp nội dung PR dựa trên các file thay đổi, cập nhật nếu PR summary đã tồn tại.
     """
     Log.print_green("Generating PR summary...")
 
@@ -52,7 +52,25 @@ def generate_pr_summary(changed_files, ai):
         return None
 
     full_context = "\n\n".join(file_contents)
-    return ai.ai_request_summary(code=full_context) 
+    new_summary = ai.ai_request_summary(code=full_context)
+
+    comments = github.get_comments()
+    summary_comment = None
+
+    for comment in comments:
+        if comment["body"].startswith("## PR Summary"):
+            summary_comment = comment
+            break
+
+    if summary_comment:
+        github.update_comment(summary_comment["id"], f"## PR Summary\n\n{new_summary}")
+        Log.print_yellow("Updated existing PR summary.")
+    else:
+        github.post_comment_general(f"## PR Summary\n\n{new_summary}")
+        Log.print_yellow("Posted new PR summary.")
+
+    return new_summary
+
 
 def process_file(file, ai, github, vars):
     Log.print_green(f"Reviewing file: {file}")
