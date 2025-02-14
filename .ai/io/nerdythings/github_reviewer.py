@@ -24,19 +24,16 @@ def main():
 
     Log.print_yellow(f"Changed files: {changed_files}")
 
-    pr_summary = generate_pr_summary(changed_files, ai, github)
-    if pr_summary:
-        github.post_comment_general(f"## PR Summary\n\n{pr_summary}")
-        Log.print_yellow("Posted PR summary.")
+    update_pr_summary(changed_files, ai, github)
 
     for file in changed_files:
         process_file(file, ai, github, vars)
 
-def generate_pr_summary(changed_files, ai, github):
+def update_pr_summary(changed_files, ai, github):
     """
-    Tổng hợp nội dung PR dựa trên các file thay đổi, cập nhật PR description nếu đã tồn tại.
+    Cập nhật PR description nếu cần nhưng không post comment PR summary.
     """
-    Log.print_green("Generating PR summary...")
+    Log.print_green("Updating PR summary...")
 
     file_contents = []
     for file in changed_files:
@@ -49,7 +46,7 @@ def generate_pr_summary(changed_files, ai, github):
             continue
 
     if not file_contents:
-        return None
+        return
 
     full_context = "\n\n".join(file_contents)
     new_summary = ai.ai_request_summary(code=full_context)
@@ -63,8 +60,6 @@ def generate_pr_summary(changed_files, ai, github):
 
     github.update_pull_request(updated_body)
     Log.print_yellow("Updated PR description with PR summary.")
-
-    return new_summary
 
 def process_file(file, ai, github, vars):
     Log.print_green(f"Reviewing file: {file}")
@@ -88,7 +83,6 @@ def process_file(file, ai, github, vars):
 
 def handle_ai_response(response, github, file, file_diffs):
     if not response or "no issues" in response.lower():
-        github.post_comment_general(f"AI review: No issues found in `{file}`.")
         Log.print_green(f"No issues detected in `{file}`.")
         return
 
