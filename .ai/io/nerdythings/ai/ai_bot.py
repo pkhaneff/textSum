@@ -1,5 +1,3 @@
-
-
 from abc import ABC, abstractmethod
 import re
 from ai.line_comment import LineComment
@@ -7,42 +5,36 @@ from ai.line_comment import LineComment
 class AiBot(ABC):
     
     __no_response = "No critical issues found"
-    __problems = "errors, issues, potential crashes, or unhandled exceptions"
+    __problems = "errors, security issues, performance bottlenecks, or bad practices"
     __chat_gpt_ask_long = """
-        You are an AI code reviewer specializing in identifying issues in modified code. Your task is to analyze **only meaningful code changes** from the Git diffs and report any issues.  
-
+        You are an AI code reviewer with expertise in multiple programming languages.
+        Your goal is to identify and explain issues found in modified code.
+        
         **Review Scope:**  
-        - **Only analyze files with structural code changes.** Ignore files where only comments or formatting have changed.  
-        - **Focus on logic modifications.** Skip unchanged lines and purely stylistic adjustments.  
+        - **Focus on meaningful structural changes** in the Git diffs. Ignore changes related to formatting or comments.  
+        - **Provide clear explanations** and suggestions for fixes.  
+        - **Categorize issues by severity**: Warning, Error, Critical.  
 
         **Review Guidelines:**  
-        - **Analyze only the changed lines.** Ignore unchanged code.  
-        - **Ignore formatting-only changes.** Focus on logic, syntax, security, and performance.  
-        - **Ensure accuracy.** Each issue must be directly linked to a modified line.  
-
-        **Issue Categories:**  
-        - **Syntax Errors**: Mistakes that cause compilation or runtime failures.  
-        - **Logical Errors**: Incorrect logic, unintended behavior, or edge cases.  
-        - **Security Issues**: Vulnerabilities like SQL injection, XSS, or unsafe operations.  
-        - **Performance Bottlenecks**: Inefficient algorithms, redundant operations, or excessive resource use.  
+        - **Syntax Errors**: Any issue that leads to compilation or runtime failure.  
+        - **Logical Errors**: Incorrect conditions, infinite loops, unexpected behavior.  
+        - **Security Issues**: SQL injection, XSS, hardcoded secrets, unvalidated inputs.  
+        - **Performance Bottlenecks**: Unoptimized loops, redundant computations.  
+        - **Best Practices Violations**: Not following language-specific best practices.  
 
         **Strict Output Format:**  
-        line_number : [Type] Description of the issue and potential impact.  
+        line_number : [Severity] [Type] Description of the issue and how to fix it.  
         **Example:**  
-        42 : [Logic] if condition always evaluates to true, causing an unintended infinite loop.  
-        78 : [Security] Potential SQL injection due to missing parameterized query.  
-        103 : [Performance] Nested loop increases time complexity unnecessarily.  
+        42 : [Error] [Logic] if condition always evaluates to true, leading to an infinite loop. Suggested fix: review condition logic.  
+        78 : [Critical] [Security] Potential SQL injection risk due to lack of input sanitization. Suggested fix: use parameterized queries.  
+        103 : [Warning] [Performance] Unnecessary nested loops detected. Suggested fix: optimize using dictionary lookup.  
 
-        - If no issues are found in the modified code, return exactly:  
-        
+        - If no issues are found, return exactly:  
         `{no_response}`.  
 
         **Git Diffs (Only structural changes considered):**  
-
         {diffs}
     """
-
-
 
     @abstractmethod
     def ai_request_diffs(self, code, diffs) -> str:
@@ -51,10 +43,10 @@ class AiBot(ABC):
     @staticmethod
     def build_ask_text(code, diffs) -> str:
         return AiBot.__chat_gpt_ask_long.format(
-            problems = AiBot.__problems,
-            no_response = AiBot.__no_response,
-            diffs = diffs,
-            code = code,
+            problems=AiBot.__problems,
+            no_response=AiBot.__no_response,
+            diffs=diffs,
+            code=code,
         )
 
     @staticmethod
@@ -76,22 +68,16 @@ class AiBot(ABC):
             if not full_text:
                 continue
 
-            match = re.match(r"(\d+)\s*:\s*\[(.*?)\]\s*(.*)", full_text)
+            match = re.match(r"(\d+)\s*:\s*\[(.*?)\]\s*\[(.*?)\]\s*(.*)", full_text)
             if match:
-                line_number, issue_type, description = match.groups()
-
-                if "potential" in description.lower() and "consider" not in description.lower():
-                    continue  
-
+                line_number, severity, issue_type, description = match.groups()
+                
                 clean_description = description.capitalize().strip()
                 if not clean_description.endswith("."):
                     clean_description += "."
-
-                models.append(LineComment(line=int(line_number), text=f"[{issue_type}] {clean_description}"))
+                
+                models.append(LineComment(line=int(line_number), text=f"[{severity}] [{issue_type}] {clean_description}"))
             else:
                 models.append(LineComment(line=0, text=full_text))
 
         return models
-
-
-    

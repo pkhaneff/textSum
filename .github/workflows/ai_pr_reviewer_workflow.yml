@@ -1,4 +1,4 @@
-name: AI Code Review
+name: BAP AI
 
 on:
   pull_request:
