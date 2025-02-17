@@ -81,6 +81,42 @@ def process_file(file, ai, github, vars):
     handle_ai_response(response, github, file, file_diffs)
 
 def handle_ai_response(response, github, file, file_diffs):
+    # Kiểm tra nếu không có phản hồi từ AI hoặc phản hồi không có lỗi
+    if not response or AiBot.is_no_issues_text(response):
+        Log.print_green(f"No issues detected in `{file}`.")
+        return
+
+    # Phân tích các gợi ý từ phản hồi
+    suggestions = parse_ai_suggestions(response)
+    if not suggestions:
+        Log.print_red(f"Failed to parse AI suggestions for `{file}`.")
+        return
+
+    # Kiểm tra nếu không có thay đổi so với lần đăng trước đó
+    comment_body = f"### AI Review for `{file}`\n\n"
+    for suggestion in suggestions:
+        comment_body += f"- {suggestion.strip()}\n"
+
+    # Chỉ đăng bình luận nếu có thay đổi so với lần đăng trước
+    try:
+        # Kiểm tra nếu bình luận đã tồn tại trước đó
+        existing_comments = github.get_comments()
+        comment_already_posted = False
+        for comment in existing_comments:
+            if comment['body'] == comment_body:
+                comment_already_posted = True
+                break
+        
+        # Nếu chưa đăng bình luận giống, thì đăng bình luận mới
+        if not comment_already_posted:
+            github.post_comment_general(comment_body)
+            Log.print_yellow(f"Posted review for `{file}`")
+        else:
+            Log.print_green(f"Review for `{file}` already posted, skipping.")
+            
+    except RepositoryError as e:
+        Log.print_red(f"Failed to post review for `{file}`: {e}")
+
     if not response or AiBot.is_no_issues_text(response):
         Log.print_green(f"No issues detected in `{file}`.")
         return
