@@ -6,8 +6,7 @@ class AiBot(ABC):
     
     __no_response = "No critical issues found"
     __problems = "errors, security issues, performance bottlenecks, or bad practices"
-    __chat_gpt_ask_long = 
-    """
+    __chat_gpt_ask_long = """
         You are an AI code reviewer with expertise in multiple programming languages.
         Your goal is to analyze Git diffs and identify potential issues.
 
