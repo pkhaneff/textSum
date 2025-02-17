@@ -73,15 +73,14 @@ class AiBot(ABC):
 
     @staticmethod
     def build_ask_text(code, diffs) -> str:
-        # Kiểm tra diffs có dữ liệu hợp lệ không
         if isinstance(diffs, list) and len(diffs) > 0:
             line_number = diffs[0].get("line_number", "N/A")
             severity = diffs[0].get("severity", "Warning")
-            issue_type = diffs[0].get("type", "General Issue")  # Thêm xử lý 'type'
+            issue_type = diffs[0].get("type", "General Issue") 
         elif isinstance(diffs, dict):
             line_number = diffs.get("line_number", "N/A")
             severity = diffs.get("severity", "Warning")
-            issue_type = diffs.get("type", "General Issue")  # Thêm xử lý 'type'
+            issue_type = diffs.get("type", "General Issue") 
         else:
             line_number = "N/A"
             severity = "Warning"
@@ -94,7 +93,7 @@ class AiBot(ABC):
             code=code,
             line_number=line_number,
             severity=severity,
-            type=issue_type  # Truyền giá trị 'type' vào
+            type=issue_type 
         )
 
     @staticmethod
@@ -119,7 +118,7 @@ class AiBot(ABC):
             match = re.match(r"(⚠️|❌)\s*\[(.*?)\]\s*\[(.*?)\]\s*(.*)", full_text)
             if match and all(match.groups()):
                 severity_icon, severity, issue_type, description = match.groups()
-                clean_description = description.capitalize().strip()
+                clean_description = description.capitalize().strip() if description else "No description provided"
                 if not clean_description.endswith("."):
                     clean_description += "."
                 models.append(LineComment(line=0, text=f"{severity_icon} [{severity}] [{issue_type}] {clean_description}"))
