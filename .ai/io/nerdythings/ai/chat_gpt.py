@@ -20,18 +20,22 @@ class ChatGPT(AiBot):
                 max_tokens=4096  
             )
 
-            if response and response.choices and len(response.choices) > 0:
+            print("🔍 Raw response:", response)
+
+            if response and hasattr(response, "choices") and len(response.choices) > 0:
                 ai_message = response.choices[0].message
+                print("🔍 AI message:", ai_message)
+
                 if hasattr(ai_message, "content") and ai_message.content:
-                    if response.choices[0].finish_reason == "length":
-                        return "⚠️ AI response might be truncated. Consider increasing max_tokens."
                     return ai_message.content.strip()
                 else:
-                    return "⚠️ AI did not provide a valid response."
-            return "⚠️ No response from AI."
+                    return "⚠️ AI không cung cấp phản hồi hợp lệ."
+            return "⚠️ Không nhận được phản hồi từ AI."
         except Exception as e:
+            import traceback
             print(f"🚨 API Error: {e}")
-            return "❌ Error occurred during AI processing."
+            print(traceback.format_exc())  # In lỗi chi tiết
+            return f"❌ Error occurred: {str(e)}"
         
     def ai_request_summary(self, code):
         try:

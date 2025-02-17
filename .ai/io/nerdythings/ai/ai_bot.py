@@ -73,11 +73,32 @@ class AiBot(ABC):
 
     @staticmethod
     def build_ask_text(code, diffs) -> str:
+        # Kiểm tra và xử lý khi diffs là một list hoặc dict
+        if isinstance(diffs, list) and len(diffs) > 0:
+            line_number = diffs[0].get("line_number", "N/A")
+            severity = diffs[0].get("severity", "Warning")
+            issue_type = diffs[0].get("type", "General Issue") 
+            issue_description = diffs[0].get("issue_description", "No description")
+        elif isinstance(diffs, dict):
+            line_number = diffs.get("line_number", "N/A")
+            severity = diffs.get("severity", "Warning")
+            issue_type = diffs.get("type", "General Issue") 
+            issue_description = diffs.get("issue_description", "No description")
+        else:
+            line_number = "N/A"
+            severity = "Warning"
+            issue_type = "General Issue"
+            issue_description = "No description"
+
         return AiBot.__chat_gpt_ask_long.format(
             problems=AiBot.__problems,
             no_response=AiBot.__no_response,
             diffs=diffs,
             code=code,
+            line_number=line_number,
+            severity=severity,
+            type=issue_type,
+            issue_description=issue_description
         )
 
     @staticmethod
@@ -102,7 +123,7 @@ class AiBot(ABC):
             match = re.match(r"(⚠️|❌)\s*\[(.*?)\]\s*\[(.*?)\]\s*(.*)", full_text)
             if match and all(match.groups()):
                 severity_icon, severity, issue_type, description = match.groups()
-                clean_description = description.capitalize().strip()
+                clean_description = description.capitalize().strip() if description else "No description provided"
                 if not clean_description.endswith("."):
                     clean_description += "."
                 models.append(LineComment(line=0, text=f"{severity_icon} [{severity}] [{issue_type}] {clean_description}"))
