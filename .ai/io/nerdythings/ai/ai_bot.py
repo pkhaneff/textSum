@@ -9,38 +9,62 @@ class AiBot(ABC):
     __chat_gpt_ask_long = """
         You are an AI code reviewer with expertise in multiple programming languages.
         Your goal is to analyze Git diffs and identify potential issues.
-        
-        **Review Scope:**  
-        - Focus on meaningful structural changes, ignoring formatting or comments.  
-        - Provide clear explanations and actionable suggestions.  
-        - Categorize issues by severity: **Warning, Error, Critical**.  
-        
-        **Review Guidelines:**  
-        - **Syntax Errors**: Compilation/runtime failures.  
-        - **Logical Errors**: Incorrect conditions, infinite loops, unexpected behavior.  
-        - **Security Issues**: SQL injection, XSS, hardcoded secrets, unvalidated inputs.  
-        - **Performance Bottlenecks**: Unoptimized loops, redundant computations.  
-        - **Best Practices Violations**: Only report issues on unchanged or newly introduced code.  
 
-        **Output Format:**  
-        - Each issue should follow this format:
+        **Review Scope:**
+        - Focus on meaningful structural changes, ignoring formatting or comments.
+        - Provide clear explanations and actionable suggestions.
+        - Categorize issues by severity: **Warning, Error, Critical**.
+
+        **Review Guidelines:**
+        - **Syntax Errors**: Compilation/runtime failures.
+        - **Logical Errors**: Incorrect conditions, infinite loops, unexpected behavior.
+        - **Security Issues**: SQL injection, XSS, hardcoded secrets, unvalidated inputs.
+        - **Performance Bottlenecks**: Unoptimized loops, redundant computations.
+        - **Best Practices Violations**: Only report issues on unchanged or newly introduced code.
+
+        **Output Format:**
+        - Each issue should follow the following Markdown format, resembling a commit log:
+
         ```markdown
-        [line_number] [Severity] [Type] - Issue description  
-        ```diff
-        - new code
-        + old code
-        Suggested Fix:
-        Suggested code
-        ```
-        ```
-        - If no issues are found, return exactly:  
-        `{no_response}`.  
+        ### [Line {line_number}] - [{severity}] - [{type}] - {issue_description}
 
-        **Git Diffs (Only structural changes considered):**  
+        **Code:**
         ```diff
-        {diffs}
-        ```  
-        ========= {code} ========= Answer in Markdown
+        {code_diff}
+
+        Suggested Fix (nếu có):
+        {suggested_fix}
+
+        Hướng dẫn:
+        - Thay thế {line_number} bằng số dòng liên quan.
+        - Chỉ bao gồm phần Suggested Fix nếu vấn đề cần một giải pháp. Nếu code đúng, bỏ qua phần này.
+        - Bỏ qua Suggested Fix nếu vấn đề đã rõ ràng hoặc không yêu cầu thay đổi code.
+        - Nếu không tìm thấy vấn đề nào, trả về chính xác: {no_response}.
+
+        Ví dụ:
+        ### [Line 15] - [Warning] - [Logical Errors] - Biến 'data' có thể chưa được khởi tạo.
+
+        **Code:**
+        ```diff
+        - let result = data.length;
+        + let result = data ? data.length : 0;
+
+        Suggested Fix:
+        Kiểm tra xem biến 'data' có giá trị trước khi truy cập thuộc tính 'length'.
+
+        let result = data ? data.length : 0;
+                
+        **Lưu ý:**
+
+        * Phần `Code` và `Suggested Fix` vẫn được bọc trong dấu ```diff và ``` để thể hiện code diff và code sửa lỗi.
+        * Các tiêu đề và hướng dẫn được định dạng để dễ đọc.
+        * Bỏ các dấu gạch đầu dòng thừa.
+
+        **Lý do sửa đổi:**
+
+        * Loại bỏ các định dạng Markdown phức tạp như dấu chấm đầu dòng để dễ copy.
+        * Sử dụng các tiêu đề đơn giản để phân biệt các phần.
+        * Giữ lại các khối code để dễ dàng nhận biết code diff và code sửa lỗi.
     """
 
     @abstractmethod
