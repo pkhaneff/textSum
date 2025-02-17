@@ -6,7 +6,8 @@ class AiBot(ABC):
     
     __no_response = "No critical issues found"
     __problems = "errors, security issues, performance bottlenecks, or bad practices"
-    __chat_gpt_ask_long = """
+    __chat_gpt_ask_long = 
+    """
         You are an AI code reviewer with expertise in multiple programming languages.
         Your goal is to analyze Git diffs and identify potential issues.
 
@@ -30,7 +31,7 @@ class AiBot(ABC):
 
         **Code:**
         ```diff
-        {code_diff}
+        {code}
 
         Suggested Fix (nếu có):
         {suggested_fix}
@@ -73,22 +74,24 @@ class AiBot(ABC):
 
     @staticmethod
     def build_ask_text(code, diffs) -> str:
-        # Kiểm tra và xử lý khi diffs là một list hoặc dict
         if isinstance(diffs, list) and len(diffs) > 0:
             line_number = diffs[0].get("line_number", "N/A")
             severity = diffs[0].get("severity", "Warning")
             issue_type = diffs[0].get("type", "General Issue") 
             issue_description = diffs[0].get("issue_description", "No description")
+            suggested_fix = diffs[0].get("suggested_fix", "")
         elif isinstance(diffs, dict):
             line_number = diffs.get("line_number", "N/A")
             severity = diffs.get("severity", "Warning")
             issue_type = diffs.get("type", "General Issue") 
             issue_description = diffs.get("issue_description", "No description")
+            suggested_fix = diffs.get("suggested_fix", "")
         else:
             line_number = "N/A"
             severity = "Warning"
             issue_type = "General Issue"
             issue_description = "No description"
+            suggested_fix = ""
 
         return AiBot.__chat_gpt_ask_long.format(
             problems=AiBot.__problems,
@@ -98,7 +101,8 @@ class AiBot(ABC):
             line_number=line_number,
             severity=severity,
             type=issue_type,
-            issue_description=issue_description
+            issue_description=issue_description,
+            suggested_fix=suggested_fix
         )
 
     @staticmethod
