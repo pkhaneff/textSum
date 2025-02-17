@@ -113,4 +113,16 @@ class GitHub(Repository):
         response = requests.patch(url, json=data, headers=headers)
         return response.json()
 
-    
+    def update_pr_summary(self, ai_summary):
+        """Cập nhật tóm tắt PR với nội dung từ AI."""
+        pr_data = self.get_pull_request()
+        
+        if not pr_data or "body" not in pr_data:
+            raise RepositoryError("Không thể lấy nội dung PR.")
+
+        lines = ai_summary.split("\n", 1) 
+        title = lines[0].strip() if lines else "Cập nhật PR"
+        description = lines[1].strip() if len(lines) > 1 else pr_data["body"]
+
+        new_body = f"# {title}\n\n{description}"
+        return self.update_pull_request(new_body)
