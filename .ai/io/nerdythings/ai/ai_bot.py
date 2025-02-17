@@ -73,15 +73,19 @@ class AiBot(ABC):
 
     @staticmethod
     def build_ask_text(code, diffs) -> str:
+        # Kiểm tra diffs có dữ liệu hợp lệ không
         if isinstance(diffs, list) and len(diffs) > 0:
             line_number = diffs[0].get("line_number", "N/A")
             severity = diffs[0].get("severity", "Warning")
+            issue_type = diffs[0].get("type", "General Issue")  # Thêm xử lý 'type'
         elif isinstance(diffs, dict):
             line_number = diffs.get("line_number", "N/A")
             severity = diffs.get("severity", "Warning")
-        else: 
+            issue_type = diffs.get("type", "General Issue")  # Thêm xử lý 'type'
+        else:
             line_number = "N/A"
             severity = "Warning"
+            issue_type = "General Issue"
 
         return AiBot.__chat_gpt_ask_long.format(
             problems=AiBot.__problems,
@@ -89,7 +93,8 @@ class AiBot(ABC):
             diffs=diffs,
             code=code,
             line_number=line_number,
-            severity=severity
+            severity=severity,
+            type=issue_type  # Truyền giá trị 'type' vào
         )
 
     @staticmethod
