@@ -27,8 +27,11 @@ def main():
 
     update_pr_summary(changed_files, ai, github)
 
+    # Set to track files that have been reviewed
+    reviewed_files = set()
+
     for file in changed_files:
-        process_file(file, ai, github, vars)
+        process_file(file, ai, github, vars, reviewed_files)
 
 def update_pr_summary(changed_files, ai, github):
     """
@@ -60,9 +63,12 @@ def update_pr_summary(changed_files, ai, github):
     github.update_pull_request(updated_body)
     Log.print_yellow("Updated PR description with PR summary.")
 
-def process_file(file, ai, github, vars):
-    Log.print_green(f"Reviewing file: {file}")
+def process_file(file, ai, github, vars, reviewed_files):
+    if file in reviewed_files:
+        Log.print_green(f"Skipping file `{file}` as it has already been reviewed.")
+        return
 
+    Log.print_green(f"Reviewing file: {file}")
     try:
         with open(file, 'r', encoding="utf-8", errors="replace") as f:
             file_content = f.read()
@@ -78,12 +84,13 @@ def process_file(file, ai, github, vars):
     Log.print_green(f"AI analyzing changes in {file}...")
     response = ai.ai_request_diffs(code=file_content, diffs=file_diffs)
 
-    handle_ai_response(response, github, file, file_diffs)
+    handle_ai_response(response, github, file, file_diffs, reviewed_files)
 
-def handle_ai_response(response, github, file, file_diffs):
+def handle_ai_response(response, github, file, file_diffs, reviewed_files):
     # Kiểm tra nếu không có phản hồi từ AI hoặc phản hồi không có lỗi
     if not response or AiBot.is_no_issues_text(response):
         Log.print_green(f"No issues detected in `{file}`.")
+        reviewed_files.add(file)  # Đánh dấu file là đã review
         return
 
     # Phân tích các gợi ý từ phản hồi
@@ -92,12 +99,11 @@ def handle_ai_response(response, github, file, file_diffs):
         Log.print_red(f"Failed to parse AI suggestions for `{file}`.")
         return
 
-    # Kiểm tra nếu không có thay đổi so với lần đăng trước đó
+    # Tạo comment nếu có gợi ý từ AI
     comment_body = f"### AI Review for `{file}`\n\n"
     for suggestion in suggestions:
         comment_body += f"- {suggestion.strip()}\n"
 
-    # Chỉ đăng bình luận nếu có thay đổi so với lần đăng trước
     try:
         # Kiểm tra nếu bình luận đã tồn tại trước đó
         existing_comments = github.get_comments()
@@ -117,62 +123,8 @@ def handle_ai_response(response, github, file, file_diffs):
     except RepositoryError as e:
         Log.print_red(f"Failed to post review for `{file}`: {e}")
 
-    if not response or AiBot.is_no_issues_text(response):
-        Log.print_green(f"No issues detected in `{file}`.")
-        return
-
-    suggestions = parse_ai_suggestions(response)
-    if not suggestions:
-        Log.print_red(f"Failed to parse AI suggestions for `{file}`.")
-        return
-
-    comment_body = f"### AI Review for `{file}`\n\n"
-    for suggestion in suggestions:
-        comment_body += f"- {suggestion.strip()}\n"
-
-    try:
-        github.post_comment_general(comment_body)
-        Log.print_yellow(f"Posted review for `{file}`")
-    except RepositoryError as e:
-        Log.print_red(f"Failed to post review for `{file}`: {e}")
-
-    if not response or AiBot.is_no_issues_text(response):
-        Log.print_green(f"No issues detected in `{file}`.")
-        return  
-
-    suggestions = parse_ai_suggestions(response)
-    if not suggestions:
-        Log.print_red(f"Failed to parse AI suggestions for `{file}`.")
-        return
-
-    comment_body = f"### AI Review for `{file}`\n\n"
-    for suggestion in suggestions:
-        comment_body += f"- {suggestion.strip()}\n"
-
-    try:
-        github.post_comment_general(comment_body)
-        Log.print_yellow(f"Posted review for `{file}`")
-    except RepositoryError as e:
-        Log.print_red(f"Failed to post review for `{file}`: {e}")
-
-    if not response or "no issues" in response.lower():
-        Log.print_green(f"No issues detected in `{file}`.")
-        return
-
-    suggestions = parse_ai_suggestions(response)
-    if not suggestions:
-        Log.print_red(f"Failed to parse AI suggestions for `{file}`.")
-        return
-
-    comment_body = f"### AI Review for `{file}`\n\n"
-    for suggestion in suggestions:
-        comment_body += f"- {suggestion.strip()}\n"
-
-    try:
-        github.post_comment_general(comment_body)
-        Log.print_yellow(f"Posted review for `{file}`")
-    except RepositoryError as e:
-        Log.print_red(f"Failed to post review for `{file}`: {e}")
+    # Đánh dấu file là đã review
+    reviewed_files.add(file)
 
 def parse_ai_suggestions(response):
     return response.split("\n\n") if response else []
