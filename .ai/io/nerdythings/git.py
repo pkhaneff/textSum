@@ -7,11 +7,11 @@ class Git:
     @staticmethod
     def __run_subprocess(command):
         Log.print_green(command)
-        result = subprocess.run(command, stdout=subprocess.PIPE, text=True, encoding="utf-8")
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8")
         if result.returncode == 0:
             return result.stdout
         else:
-            Log.print_red(command)
+            Log.print_red(f"Error running {command}: {result.stderr}")
             raise Exception(f"Error running {command}: {result.stderr}")
 
     @staticmethod
