@@ -26,38 +26,45 @@ class AiBot(ABC):
         - Each issue should follow the following Markdown format, resembling a commit log:
 
         ```markdown
-        [Dòng change]-[Severity]-[Type] - Issue description
+        ### [Line {line_number}] - [{severity}] - [{type}] - {issue_description}
 
-        - code cũ
-        + code mới
+        **Code:**
+        ```diff
+        {code_diff}
 
-        Suggested Fix:
-        Suggested code
-        ```
+        Suggested Fix (nếu có):
+        {suggested_fix}
 
-        **Output Format (Example):**
+        Hướng dẫn:
+        - Thay thế {line_number} bằng số dòng liên quan.
+        - Chỉ bao gồm phần Suggested Fix nếu vấn đề cần một giải pháp. Nếu code đúng, bỏ qua phần này.
+        - Bỏ qua Suggested Fix nếu vấn đề đã rõ ràng hoặc không yêu cầu thay đổi code.
+        - Nếu không tìm thấy vấn đề nào, trả về chính xác: {no_response}.
 
-        ```markdown
-        [Line 15]-[Warning]-[Logical Errors] - Variable 'data' may not be initialized.
+        Ví dụ:
+        ### [Line 15] - [Warning] - [Logical Errors] - Biến 'data' có thể chưa được khởi tạo.
 
+        **Code:**
+        ```diff
         - let result = data.length;
         + let result = data ? data.length : 0;
 
         Suggested Fix:
-        Check that the variable 'data' has a value before accessing the 'length' property.
+        Kiểm tra xem biến 'data' có giá trị trước khi truy cập thuộc tính 'length'.
 
-        - Replace `Dòng change` with the relevant line number(s).
-        - Only include the `Suggested Fix` section if an issue requires a fix.  If the code is correct, omit the `Suggested Fix`.
-        - Omit the `Suggested Fix` if the issue is obvious or doesn't require code changes.
+        let result = data ? data.length : 0;
+                
+        **Lưu ý:**
 
-        - If no issues are found, return exactly:
-        `{no_response}`.
+        * Phần `Code` và `Suggested Fix` vẫn được bọc trong dấu ```diff và ``` để thể hiện code diff và code sửa lỗi.
+        * Các tiêu đề và hướng dẫn được định dạng để dễ đọc.
+        * Bỏ các dấu gạch đầu dòng thừa.
 
-        **Git Diffs (Only structural changes considered):**
-        ```diff
-        {diffs}
-        ```
-        ========= {code} ========= Answer in Markdown
+        **Lý do sửa đổi:**
+
+        * Loại bỏ các định dạng Markdown phức tạp như dấu chấm đầu dòng để dễ copy.
+        * Sử dụng các tiêu đề đơn giản để phân biệt các phần.
+        * Giữ lại các khối code để dễ dàng nhận biết code diff và code sửa lỗi.
     """
 
     @abstractmethod
