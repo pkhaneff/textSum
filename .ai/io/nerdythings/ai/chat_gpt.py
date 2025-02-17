@@ -12,12 +12,12 @@ class ChatGPT(AiBot):
         try:
             response = self.__client.chat.completions.create(
                 messages=[{
-                    "role": "user", 
+                    "role": "user",
                     "content": AiBot.build_ask_text(code=code, diffs=diffs)
                 }],
                 model=self.__chat_gpt_model,
                 stream=False,
-                max_tokens=4096  
+                max_tokens=4096
             )
 
             if response and response.choices and len(response.choices) > 0:
@@ -32,14 +32,14 @@ class ChatGPT(AiBot):
         except Exception as e:
             print(f"🚨 API Error: {e}")
             return "❌ Error occurred during AI processing."
-        
+
     def ai_request_summary(self, code):
         try:
             response = self.__client.chat.completions.create(
                 messages=[{"role": "user", "content": f"Tóm tắt nội dung PR:\n\n{code}"}],
                 model=self.__chat_gpt_model,
                 stream=False,
-                max_tokens=1024  
+                max_tokens=1024
             )
 
             if response and response.choices and len(response.choices) > 0:
@@ -52,4 +52,3 @@ class ChatGPT(AiBot):
         except Exception as e:
             print(f"🚨 API Error: {e}")
             return "❌ Lỗi xảy ra khi xử lý AI."
-    
