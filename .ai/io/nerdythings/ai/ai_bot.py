@@ -35,6 +35,17 @@ class AiBot(ABC):
         Suggested code
         ```
 
+        **Output Format (Example):**
+
+        ```markdown
+        [Line 15]-[Warning]-[Logical Errors] - Variable 'data' may not be initialized.
+
+        - let result = data.length;
+        + let result = data ? data.length : 0;
+
+        Suggested Fix:
+        Check that the variable 'data' has a value before accessing the 'length' property.
+
         - Replace `Dòng change` with the relevant line number(s).
         - Only include the `Suggested Fix` section if an issue requires a fix.  If the code is correct, omit the `Suggested Fix`.
         - Omit the `Suggested Fix` if the issue is obvious or doesn't require code changes.
