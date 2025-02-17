@@ -73,11 +73,13 @@ class AiBot(ABC):
 
     @staticmethod
     def build_ask_text(code, diffs) -> str:
+        line_number = diffs.get("line_number", "na") if isinstance(diffs, dict) else "na"
         return AiBot.__chat_gpt_ask_long.format(
             problems=AiBot.__problems,
             no_response=AiBot.__no_response,
             diffs=diffs,
             code=code,
+            line_number=line_number
         )
 
     @staticmethod
