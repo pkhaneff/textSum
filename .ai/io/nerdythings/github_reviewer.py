@@ -37,6 +37,48 @@ def main():
 
 def update_pr_summary(changed_files, ai, github):
     """
+    Cập nhật mô tả của PR thay vì đăng comment.
+    """
+    Log.print_green("Updating PR description...")
+
+    file_contents = []
+    for file in changed_files:
+        try:
+            with open(file, 'r', encoding="utf-8", errors="replace") as f:
+                content = f.read()
+                file_contents.append(f"### {file}\n{content[:1000]}...\n")
+        except FileNotFoundError:
+            Log.print_yellow(f"File not found: {file}")
+            continue
+
+    if not file_contents:
+        return
+
+    full_context = "\n\n".join(file_contents)
+    new_summary = ai.ai_request_summary(code=full_context)
+
+    # Lấy PR hiện tại
+    pr_data = github.get_pull_request()
+    current_body = pr_data.get("body") or ""
+
+    # Cập nhật PR Summary vào description
+    if PR_SUMMARY_COMMENT_IDENTIFIER in current_body:
+        updated_body = re.sub(
+            f"{PR_SUMMARY_COMMENT_IDENTIFIER}.*",
+            f"{PR_SUMMARY_COMMENT_IDENTIFIER}\n## PR Summary\n\n{new_summary}",
+            current_body,
+            flags=re.DOTALL
+        )
+    else:
+        updated_body = f"{PR_SUMMARY_COMMENT_IDENTIFIER}\n## PR Summary\n\n{new_summary}\n\n{current_body}"
+
+    try:
+        github.update_pull_request(updated_body)
+        Log.print_yellow("PR description updated successfully!")
+    except RepositoryError as e:
+        Log.print_red(f"Failed to update PR description: {e}")
+
+    """
     Cập nhật/tạo comment PR summary. Nếu có comment cũ, chỉ sửa lại nó.
     """
     Log.print_green("Updating PR summary...")
