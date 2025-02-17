@@ -2,6 +2,7 @@ import os
 from git import Git
 from ai.chat_gpt import ChatGPT
 from log import Log
+from ai.ai_bot import AiBot
 from env_vars import EnvVars
 from repository.github import GitHub
 from repository.repository import RepositoryError
@@ -51,11 +52,9 @@ def update_pr_summary(changed_files, ai, github):
     full_context = "\n\n".join(file_contents)
     new_summary = ai.ai_request_summary(code=full_context)
 
-    # Lấy thông tin PR hiện tại
     pr_data = github.get_pull_request()
     existing_body = pr_data["body"] if pr_data["body"] else ""
 
-    # Nếu PR đã có nội dung, thì append thêm thay vì thay thế
     updated_body = f"{existing_body}\n\n## PR Summary\n\n{new_summary}"
 
     github.update_pull_request(updated_body)
@@ -82,6 +81,44 @@ def process_file(file, ai, github, vars):
     handle_ai_response(response, github, file, file_diffs)
 
 def handle_ai_response(response, github, file, file_diffs):
+    if not response or AiBot.is_no_issues_text(response):
+        Log.print_green(f"No issues detected in `{file}`.")
+        return
+
+    suggestions = parse_ai_suggestions(response)
+    if not suggestions:
+        Log.print_red(f"Failed to parse AI suggestions for `{file}`.")
+        return
+
+    comment_body = f"### AI Review for `{file}`\n\n"
+    for suggestion in suggestions:
+        comment_body += f"- {suggestion.strip()}\n"
+
+    try:
+        github.post_comment_general(comment_body)
+        Log.print_yellow(f"Posted review for `{file}`")
+    except RepositoryError as e:
+        Log.print_red(f"Failed to post review for `{file}`: {e}")
+
+    if not response or AiBot.is_no_issues_text(response):
+        Log.print_green(f"No issues detected in `{file}`.")
+        return  
+
+    suggestions = parse_ai_suggestions(response)
+    if not suggestions:
+        Log.print_red(f"Failed to parse AI suggestions for `{file}`.")
+        return
+
+    comment_body = f"### AI Review for `{file}`\n\n"
+    for suggestion in suggestions:
+        comment_body += f"- {suggestion.strip()}\n"
+
+    try:
+        github.post_comment_general(comment_body)
+        Log.print_yellow(f"Posted review for `{file}`")
+    except RepositoryError as e:
+        Log.print_red(f"Failed to post review for `{file}`: {e}")
+
     if not response or "no issues" in response.lower():
         Log.print_green(f"No issues detected in `{file}`.")
         return

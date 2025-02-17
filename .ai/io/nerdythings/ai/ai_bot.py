@@ -19,6 +19,7 @@ class AiBot(ABC):
         - **Security Issues**: SQL injection, XSS, hardcoded secrets, unvalidated inputs.  
         - **Performance Bottlenecks**: Unoptimized loops, redundant computations.  
         - **Best Practices Violations**: Not following language-specific best practices.  
+        + - **Best Practices Violations**: Only report issues on unchanged or newly introduced code. 
         **Output Format:**  
         - Each issue should follow this format:
         ```markdown
