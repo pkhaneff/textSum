@@ -1,4 +1,5 @@
 import os
+import re
 from git import Git
 from ai.chat_gpt import ChatGPT
 from log import Log
@@ -31,6 +32,38 @@ def main():
         process_file(file, ai, github, vars)
 
 def update_pr_summary(changed_files, ai, github):
+    """
+    Cập nhật PR description nếu cần nhưng không post comment PR summary.
+    """
+    Log.print_green("Updating PR summary...")
+
+    file_contents = []
+    for file in changed_files:
+        try:
+            with open(file, 'r', encoding="utf-8", errors="replace") as f:
+                content = f.read()
+                file_contents.append(f"### {file}\n{content[:1000]}...\n") 
+        except FileNotFoundError:
+            Log.print_yellow(f"File not found: {file}")
+            continue
+
+    if not file_contents:
+        return
+
+    full_context = "\n\n".join(file_contents)
+    new_summary = ai.ai_request_summary(code=full_context)
+
+    pr_data = github.get_pull_request()
+    existing_body = pr_data["body"] if pr_data["body"] else ""
+
+    summary_marker = "## PR Summary"
+    if summary_marker in existing_body:
+        updated_body = re.sub(r"## PR Summary\n\n.*", f"{summary_marker}\n\n{new_summary}", existing_body, flags=re.DOTALL)
+    else:
+        updated_body = f"{existing_body}\n\n{summary_marker}\n\n{new_summary}"
+
+    github.update_pull_request(updated_body)
+    Log.print_yellow("Updated PR description with PR summary.")
     """
     Cập nhật PR description nếu cần nhưng không post comment PR summary.
     """

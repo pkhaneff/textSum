@@ -36,7 +36,7 @@ class ChatGPT(AiBot):
     def ai_request_summary(self, code):
         try:
             response = self.__client.chat.completions.create(
-                messages=[{"role": "user", "content": f"Tóm tắt nội dung PR:\n\n{code}"}],
+                messages=[{"role": "user", "content": f"Viết một tiêu đề ngắn gọn cho PR này kèm tóm tắt:\n\n{code}"}],
                 model=self.__chat_gpt_model,
                 stream=False,
                 max_tokens=1024  

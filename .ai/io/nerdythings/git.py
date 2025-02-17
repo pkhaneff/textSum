@@ -7,16 +7,12 @@ class Git:
     @staticmethod
     def __run_subprocess(command):
         Log.print_green(command)
-        result = subprocess.run(command, stdout=subprocess.PIPE, text=True, encoding="utf-8")
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8")
         if result.returncode == 0:
             return result.stdout
         else:
-            Log.print_red(command)
+            Log.print_red(f"Error running {command}: {result.stderr}")
             raise Exception(f"Error running {command}: {result.stderr}")
-
-    @staticmethod
-    def is_sha(ref: str) -> bool:
-        return re.match(r'^[0-9a-f]{40}$', ref.lower()) is not None
 
     @staticmethod
     def get_remote_name() -> str:
@@ -35,18 +31,12 @@ class Git:
     @staticmethod
     def get_diff_files(base_ref: str, head_ref: str) -> List[str]:
         remote_name = Git.get_remote_name()
-        base = base_ref if Git.is_sha(base_ref) else f"{remote_name}/{base_ref}"
-        head = head_ref if Git.is_sha(head_ref) else f"{remote_name}/{head_ref}"
-
-        command = ["git", "diff", "--name-only", base, head]
+        command = ["git", "diff", "--name-only", f"{remote_name}/{base_ref}", f"{remote_name}/{head_ref}"]
         result = Git.__run_subprocess(command)
         return result.strip().splitlines()
 
     @staticmethod
     def get_diff_in_file(base_ref: str, head_ref: str, file_path: str) -> str:
         remote_name = Git.get_remote_name()
-        base = base_ref if Git.is_sha(base_ref) else f"{remote_name}/{base_ref}"
-        head = head_ref if Git.is_sha(head_ref) else f"{remote_name}/{head_ref}"
-
-        command = ["git", "diff", base, head, "--", file_path]
+        command = ["git", "diff", f"{remote_name}/{base_ref}", f"{remote_name}/{head_ref}", "--", file_path]
         return Git.__run_subprocess(command)
