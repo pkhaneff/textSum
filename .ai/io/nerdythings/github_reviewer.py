@@ -59,7 +59,7 @@ def update_pr_summary(changed_files, ai, github):
 
     # Lấy PR hiện tại
     pr_data = github.get_pull_request()
-    current_body = pr_data.get("body", "")
+    current_body = pr_data.get("body") or ""
 
     # Cập nhật PR Summary vào description
     if PR_SUMMARY_COMMENT_IDENTIFIER in current_body:
