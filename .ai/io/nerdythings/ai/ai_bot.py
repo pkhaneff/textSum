@@ -25,10 +25,13 @@ class AiBot(ABC):
         **Output Format:**  
         - Each issue should follow this format:
         ```markdown
-        [line_number] [Severity] [Type] - Issue description  
-        ```diff
+        [Severity] [Type] - Issue description  
+        ```
+        diff
         - new code
         + old code
+        ```
+        ```
         Suggested Fix:
         Suggested code
         ```
