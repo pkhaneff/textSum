@@ -7,7 +7,7 @@ from env_vars import EnvVars
 from repository.github import GitHub
 from repository.repository import RepositoryError
 
-PR_SUMMARY_COMMENT_IDENTIFIER = "<!-- PR_SUMMARY_COMMENT -->"
+PR_SUMMARY_COMMENT_IDENTIFIER = "<!-- PR SUMMARY COMMENT -->"
 
 def main():
     vars = EnvVars()
