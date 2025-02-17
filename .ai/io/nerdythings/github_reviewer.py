@@ -29,6 +29,7 @@ def main():
 
     update_pr_summary(changed_files, ai, github)
 
+    # Set to track files that have been reviewed
     reviewed_files = set()
 
     for file in changed_files:
@@ -36,7 +37,7 @@ def main():
 
 def update_pr_summary(changed_files, ai, github):
     """
-    Cập nhật/tạo comment PR summary.  Tìm comment hiện tại, sửa nó. Nếu không có, tạo một cái mới.
+    Cập nhật/tạo comment PR summary. Nếu có comment cũ, chỉ sửa lại nó.
     """
     Log.print_green("Updating PR summary...")
 
@@ -68,16 +69,17 @@ def update_pr_summary(changed_files, ai, github):
 
     try:
         if comment_id_to_update:
+            Log.print_yellow(f"Updating existing PR summary comment (ID: {comment_id_to_update})...")
             github.update_comment(comment_id_to_update, pr_summary_comment_body)
-            Log.print_yellow(f"Updated existing PR summary comment (ID: {comment_id_to_update}).")
         else:
+            Log.print_yellow("Creating new PR summary comment...")
             github.post_comment_general(pr_summary_comment_body)
-            Log.print_yellow("Created new PR summary comment.")
 
     except RepositoryError as e:
         Log.print_red(f"Failed to update/create PR summary comment: {e}")
     except Exception as e:
         Log.print_red(f"An unexpected error occurred during comment update/creation: {e}")
+
 
 def process_file(file, ai, github, vars, reviewed_files):
     if file in reviewed_files:
