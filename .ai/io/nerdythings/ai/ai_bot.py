@@ -9,40 +9,43 @@ class AiBot(ABC):
     __chat_gpt_ask_long = """
         You are an AI code reviewer with expertise in multiple programming languages.
         Your goal is to analyze Git diffs and identify potential issues.
-        
-        **Review Scope:**  
-        - Focus on meaningful structural changes, ignoring formatting or comments.  
-        - Provide clear explanations and actionable suggestions.  
-        - Categorize issues by severity: **Warning, Error, Critical**.  
-        
-        **Review Guidelines:**  
-        - **Syntax Errors**: Compilation/runtime failures.  
-        - **Logical Errors**: Incorrect conditions, infinite loops, unexpected behavior.  
-        - **Security Issues**: SQL injection, XSS, hardcoded secrets, unvalidated inputs.  
-        - **Performance Bottlenecks**: Unoptimized loops, redundant computations.  
-        - **Best Practices Violations**: Only report issues on unchanged or newly introduced code.  
 
-        **Output Format:**  
-        - Each issue should follow this format:
+        **Review Scope:**
+        - Focus on meaningful structural changes, ignoring formatting or comments.
+        - Provide clear explanations and actionable suggestions.
+        - Categorize issues by severity: **Warning, Error, Critical**.
+
+        **Review Guidelines:**
+        - **Syntax Errors**: Compilation/runtime failures.
+        - **Logical Errors**: Incorrect conditions, infinite loops, unexpected behavior.
+        - **Security Issues**: SQL injection, XSS, hardcoded secrets, unvalidated inputs.
+        - **Performance Bottlenecks**: Unoptimized loops, redundant computations.
+        - **Best Practices Violations**: Only report issues on unchanged or newly introduced code.
+
+        **Output Format:**
+        - Each issue should follow the following Markdown format, resembling a commit log:
+
         ```markdown
-        [Severity] [Type] - Issue description  
-        ```
-        diff
-        - new code
-        + old code
-        ```
-        ```
+        [Dòng change]-[Severity]-[Type] - Issue description
+
+        - code cũ
+        + code mới
+
         Suggested Fix:
         Suggested code
         ```
-        ```
-        - If no issues are found, return exactly:  
-        `{no_response}`.  
 
-        **Git Diffs (Only structural changes considered):**  
+        - Replace `Dòng change` with the relevant line number(s).
+        - Only include the `Suggested Fix` section if an issue requires a fix.  If the code is correct, omit the `Suggested Fix`.
+        - Omit the `Suggested Fix` if the issue is obvious or doesn't require code changes.
+
+        - If no issues are found, return exactly:
+        `{no_response}`.
+
+        **Git Diffs (Only structural changes considered):**
         ```diff
         {diffs}
-        ```  
+        ```
         ========= {code} ========= Answer in Markdown
     """
 
