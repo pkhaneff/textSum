@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
 import re
-from typing import List
 from ai.line_comment import LineComment
 
 class AiBot(ABC):
-
+    
     __no_response = "No critical issues found"
     __problems = "errors, security issues, performance bottlenecks, or bad practices"
     __chat_gpt_ask_long = """
@@ -33,7 +32,28 @@ class AiBot(ABC):
 
         Suggested Fix (nếu có):
         {suggested_fix}
-        """
+         Ví dụ:
+        ### ⚠️ [Warning] [Logical Error] - Incorrect function name used for saving newComment.
+
+        **Code:**
+        ```diff
+        - await newComment.saved()
+        + await newComment.save()
+
+        **Suggested Fix:**
+        Sửa lại phương thức `.saved()` thành `.save()` để tránh lỗi.            
+                
+        **Note:**
+
+        *   `Code` and `Suggested Fix` are wrapped with ```diff to show code diffs and fixes.
+        *   Titles and instructions are formatted for readability.
+
+        **Reason for modification:**
+
+        *   Removed complex Markdown like bullet points for easy copying.
+        *   Used simple titles to differentiate sections.
+        *   Kept code blocks to easily identify diffs and fixes.
+    """
 
     @staticmethod
     def get_context_lines(code, line_number, context=2):
@@ -41,7 +61,7 @@ class AiBot(ABC):
         Lấy một số dòng xung quanh dòng thay đổi để cung cấp ngữ cảnh cho AI.
         """
         lines = code.split("\n")
-        start = max(line_number - context - 1, 0)
+        start = max(line_number - context - 1, 0) 
         end = min(line_number + context, len(lines))
         return "\n".join(lines[start:end])
 
@@ -54,13 +74,13 @@ class AiBot(ABC):
         if isinstance(diffs, list) and diffs:
             line_number = diffs[0].get("line_number", "N/A")
             severity = diffs[0].get("severity", "Warning")
-            issue_type = diffs[0].get("type", "General Issue")
+            issue_type = diffs[0].get("type", "General Issue") 
             issue_description = diffs[0].get("issue_description", "No description")
             suggested_fix = diffs[0].get("suggested_fix", "")
         elif isinstance(diffs, dict):
             line_number = diffs.get("line_number", "N/A")
             severity = diffs.get("severity", "Warning")
-            issue_type = diffs.get("type", "General Issue")
+            issue_type = diffs.get("type", "General Issue") 
             issue_description = diffs.get("issue_description", "No description")
             suggested_fix = diffs.get("suggested_fix", "")
         else:
@@ -87,32 +107,35 @@ class AiBot(ABC):
         target = AiBot.__no_response.replace(" ", "")
         source_no_spaces = source.replace(" ", "")
         return source_no_spaces.startswith(target)
-
+    
     @staticmethod
-    def split_ai_response(input: str, code: str) -> List[LineComment]:
+    def split_ai_response(input) -> list[LineComment]:
         if not input:
             return []
 
         lines = input.strip().split("\n")
         comments = []
-        total_lines_in_code = len(code.split("\n"))
 
         for full_text in lines:
             full_text = full_text.strip()
             if not full_text:
                 continue
 
+            # Improved regex to match the required format more accurately
             match = re.match(r"### \[Line (\d+)\] - \[(Warning|Error|Critical)\] - \[(.*?)\] - (.*)", full_text)
-            if match:
+            if match and all(match.groups()):
                 line_number, severity, issue_type, description = match.groups()
                 line_number = int(line_number)
 
-                if 1 <= line_number <= total_lines_in_code:
-                    clean_description = description.capitalize().strip()
-                    if not clean_description.endswith("."):
-                        clean_description += "."
+                if line_number < 1 or line_number > total_lines_in_code:
+                    continue
 
-                    comments.append(LineComment(line=line_number, text=f"### [{severity}] [{issue_type}]\n\n{clean_description}"))
+                clean_description = description.capitalize().strip()
+                if not clean_description.endswith("."):
+                    clean_description += "."
+
+                comments.append(LineComment(line=line_number, text=f"### [{severity}] [{issue_type}]\n\n{clean_description}"))
+
             else:
                 comments.append(LineComment(line=0, text=full_text))
 
