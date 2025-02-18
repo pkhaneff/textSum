@@ -40,17 +40,14 @@ class ChatGPT(AiBot):
         
     def ai_request_summary(self, file_changes):
         try:
-            summary_request = """
-            Tóm tắt nội dung PR. Đưa ra bảng gồm 2 cột:
-            - Cột 1: Tên file thay đổi
-            - Cột 2: Tóm tắt thay đổi của từng file
-            
-            Danh sách thay đổi:
-            """
+            if not isinstance(file_changes, dict):
+                raise ValueError("file_changes phải là một dictionary!")
+
+            summary_request = "Tóm tắt nội dung PR...\n"
             
             for file_name, file_content in file_changes.items():
                 summary_request += f"\nFile: {file_name}\nNội dung thay đổi:\n{file_content}\n"
-            
+
             response = self.__client.chat.completions.create(
                 messages=[{"role": "user", "content": summary_request}],
                 model=self.__chat_gpt_model,
@@ -65,7 +62,9 @@ class ChatGPT(AiBot):
                 else:
                     return "⚠️ AI không cung cấp phản hồi hợp lệ."
             return "⚠️ Không nhận được phản hồi từ AI."
+
         except Exception as e:
             print(f"🚨 API Error: {e}")
-            print(traceback.format_exc())  # In lỗi chi tiết
+            print(traceback.format_exc())
             return f"❌ Error occurred: {str(e)}"
+
