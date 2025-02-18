@@ -42,17 +42,15 @@ class AiBot(ABC):
         - Nếu không tìm thấy vấn đề nào, trả về chính xác: {no_response}.
 
         Ví dụ:
-        ### [Line 15] - [Warning] - [Logical Errors] - Biến 'data' có thể chưa được khởi tạo.
+        ### ⚠️ [Warning] [Logical Error] - Incorrect function name used for saving newComment.
 
         **Code:**
         ```diff
-        - let result = data.length;
-        + let result = data ? data.length : 0;
+        - await newComment.saved()
+        + await newComment.save()
 
-        Suggested Fix:
-        Kiểm tra xem biến 'data' có giá trị trước khi truy cập thuộc tính 'length'.
-
-        let result = data ? data.length : 0;
+        **Suggested Fix:**
+        Sửa lại phương thức `.saved()` thành `.save()` để tránh lỗi.            
                 
         **Lưu ý:**
 
@@ -116,21 +114,27 @@ class AiBot(ABC):
             return []
 
         lines = input.strip().split("\n")
-        models = []
+        comments = []
 
         for full_text in lines:
             full_text = full_text.strip()
             if not full_text:
                 continue
 
-            match = re.match(r"(⚠️|❌)\s*\[(.*?)\]\s*\[(.*?)\]\s*(.*)", full_text)
+            # Cập nhật regex để lấy line_number
+            match = re.match(r"### \[Line (\d+)\] - \[(.*?)\] - \[(.*?)\] - (.*)", full_text)
             if match and all(match.groups()):
-                severity_icon, severity, issue_type, description = match.groups()
-                clean_description = description.capitalize().strip() if description else "No description provided"
+                line_number, severity, issue_type, description = match.groups()
+                line_number = int(line_number)  # Chuyển thành số nguyên
+
+                # Chuẩn hóa description
+                clean_description = description.capitalize().strip()
                 if not clean_description.endswith("."):
                     clean_description += "."
-                models.append(LineComment(line=0, text=f"{severity_icon} [{severity}] [{issue_type}] {clean_description}"))
-            elif full_text.strip():  
-                models.append(LineComment(line=0, text=full_text))
 
-        return models
+                comments.append(LineComment(line=line_number, text=f"### [{severity}] [{issue_type}]\n\n{clean_description}"))
+
+            else:
+                comments.append(LineComment(line=0, text=full_text))
+
+        return comments
