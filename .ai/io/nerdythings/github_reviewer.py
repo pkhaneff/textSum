@@ -65,7 +65,7 @@ def update_pr_summary(changed_files, ai, github):
         return
 
     full_context = "\n\n".join(file_contents)
-    new_summary = ai.ai_request_summary(code=full_context)
+    new_summary = ai.ai_request_summary(code=full_context, file_changes=changed_files)
 
     pr_data = github.get_pull_request()
     current_body = pr_data.get("body") or ""
