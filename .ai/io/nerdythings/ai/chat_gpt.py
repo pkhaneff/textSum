@@ -34,7 +34,7 @@ class ChatGPT(AiBot):
         except Exception as e:
             import traceback
             print(f"🚨 API Error: {e}")
-            print(traceback.format_exc())  # In lỗi chi tiết
+            print(traceback.format_exc())  
             return f"❌ Error occurred: {str(e)}"
         
     def ai_request_summary(self, code):
@@ -49,11 +49,21 @@ class ChatGPT(AiBot):
             if response and response.choices and len(response.choices) > 0:
                 ai_message = response.choices[0].message
                 if hasattr(ai_message, "content") and ai_message.content:
-                    return ai_message.content.strip()
+                    summary_text = ai_message.content.strip()
+                    
+                    file_changes = self.extract_file_changes(code)
+                    
+                    table = "| File | Summary |\n|---|---|\n"
+                    for file, changes in file_changes.items():
+                        summary = self.summarize_file_changes(file, changes)
+                        table += f"| `{file}` | {summary} |\n"
+
+                    return f"{summary_text}\n\n{table}"
                 else:
                     return "⚠️ AI không cung cấp phản hồi hợp lệ."
             return "⚠️ Không nhận được phản hồi từ AI."
         except Exception as e:
             print(f"🚨 API Error: {e}")
             return "❌ Lỗi xảy ra khi xử lý AI."
+
     
