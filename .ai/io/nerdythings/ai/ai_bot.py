@@ -31,10 +31,10 @@ class AiBot(ABC):
         **Code:**
         ```diff
         {code}
+        ```
 
         Suggested Fix (nếu có):
         {suggested_fix}
-        ```
          Ví dụ:
         ### ⚠️ [Warning] [Logical Error] - Incorrect function name used for saving newComment.
 
