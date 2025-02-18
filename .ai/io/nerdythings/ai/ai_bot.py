@@ -55,6 +55,16 @@ class AiBot(ABC):
         *   Kept code blocks to easily identify diffs and fixes.
     """
 
+    @staticmethod
+    def get_context_lines(code, line_number, context=2):
+        """
+        Lấy một số dòng xung quanh dòng thay đổi để cung cấp ngữ cảnh cho AI.
+        """
+        lines = code.split("\n")
+        start = max(line_number - context - 1, 0) 
+        end = min(line_number + context, len(lines))
+        return "\n".join(lines[start:end])
+
     @abstractmethod
     def ai_request_diffs(self, code, diffs) -> str:
         pass
@@ -111,11 +121,14 @@ class AiBot(ABC):
             if not full_text:
                 continue
 
-            # Changed regex to match the required format
-            match = re.match(r"### \[Line (\d+)\] - \[(.*?)\] - \[(.*?)\] - (.*)", full_text)
+            # Improved regex to match the required format more accurately
+            match = re.match(r"### \[Line (\d+)\] - \[(Warning|Error|Critical)\] - \[(.*?)\] - (.*)", full_text)
             if match and all(match.groups()):
                 line_number, severity, issue_type, description = match.groups()
                 line_number = int(line_number)
+
+                if line_number < 1 or line_number > total_lines_in_code:
+                    continue
 
                 clean_description = description.capitalize().strip()
                 if not clean_description.endswith("."):
