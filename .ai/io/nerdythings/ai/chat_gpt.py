@@ -37,13 +37,24 @@ class ChatGPT(AiBot):
             print(traceback.format_exc())  # In lỗi chi tiết
             return f"❌ Error occurred: {str(e)}"
         
-    def ai_request_summary(self, code):
+    def ai_request_summary(self, file_changes):
         try:
+            summary_request = """
+            Tóm tắt nội dung PR. Đưa ra bảng gồm 2 cột:
+            - Cột 1: Tên file thay đổi
+            - Cột 2: Tóm tắt thay đổi của từng file
+            
+            Danh sách thay đổi:
+            """
+            
+            for file_name, file_content in file_changes.items():
+                summary_request += f"\nFile: {file_name}\nNội dung thay đổi:\n{file_content}\n"
+            
             response = self.__client.chat.completions.create(
-                messages=[{"role": "user", "content": f"Tóm tắt nội dung PR:\n\n{code}"}],
+                messages=[{"role": "user", "content": summary_request}],
                 model=self.__chat_gpt_model,
                 stream=False,
-                max_tokens=1024  
+                max_tokens=2048  
             )
 
             if response and response.choices and len(response.choices) > 0:
@@ -56,4 +67,3 @@ class ChatGPT(AiBot):
         except Exception as e:
             print(f"🚨 API Error: {e}")
             return "❌ Lỗi xảy ra khi xử lý AI."
-    
