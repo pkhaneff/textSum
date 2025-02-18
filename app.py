@@ -34,7 +34,7 @@ def summarize_dialogue(dialogue: str) -> str:
 
     outputs = model.generate(
         inputs["input_ids"],
-        max_length=150
+        max_length=150,
         num_beams=4,
         early_stopping=True
     )
@@ -44,4 +44,4 @@ def summarize_dialogue(dialogue: str) -> str:
 @app.post('/summarize/')
 async def summarize(dialogue_input: DialogueInput):
     summary = summarize_dialogue(dialogue_input.dialogue)
-    return {'summary': result}
+    return {'summary': summary}

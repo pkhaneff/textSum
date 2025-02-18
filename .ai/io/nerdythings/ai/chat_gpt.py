@@ -1,5 +1,6 @@
 import os
 from openai import OpenAI
+import traceback
 from ai.ai_bot import AiBot
 
 class ChatGPT(AiBot):
@@ -66,4 +67,5 @@ class ChatGPT(AiBot):
             return "⚠️ Không nhận được phản hồi từ AI."
         except Exception as e:
             print(f"🚨 API Error: {e}")
-            return "❌ Lỗi xảy ra khi xử lý AI."
+            print(traceback.format_exc())  # In lỗi chi tiết
+            return f"❌ Error occurred: {str(e)}"
