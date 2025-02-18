@@ -38,7 +38,7 @@ def summarize_dialogue(dialogue: str) -> str:
         num_beams=4,
         early_stopping=True
     )
-    summary = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    summary = tokenizer.decode(outputs[0], skip_special_tokens=)
     return summary
 
 @app.post('/summarize/')
