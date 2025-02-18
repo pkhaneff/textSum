@@ -34,18 +34,27 @@ class AiBot(ABC):
         ```
 
         Suggested Fix (nếu có):
+        ```diff
         {suggested_fix}
-         Ví dụ:
-        ### ⚠️ [Warning] [Logical Error] - Incorrect function name used for saving newComment.
+        ```
+
+        ---
+        Ví dụ:
+        ### [Line 123] - [Warning] - [Logical Error] - Incorrect function name used for saving newComment.
 
         **Code:**
         ```diff
         - await newComment.saved()
         + await newComment.save()
+        ```
 
-        **Suggested Fix:**
-        Sửa lại phương thức `.saved()` thành `.save()` để tránh lỗi.            
-                
+        Suggested Fix:
+        ```diff
+        Sửa lại phương thức `.saved()` thành `.save()` để tránh lỗi.
+        ```
+
+        ---
+
         **Note:**
 
         *   `Code` and `Suggested Fix` are wrapped with ```diff to show code diffs and fixes.
@@ -106,28 +115,28 @@ class AiBot(ABC):
         if not input:
             return []
 
-        lines = input.strip().split("\n")
         comments = []
+        # Splitting the input by the separator "---"
+        sections = re.split(r"---", input)
 
-        for full_text in lines:
-            full_text = full_text.strip()
-            if not full_text:
+        for section in sections:
+            section = section.strip()
+            if not section:
                 continue
 
-            # Cập nhật regex để lấy line_number
-            match = re.match(r"### \[Line (\d+)\] - \[(.*?)\] - \[(.*?)\] - (.*)", full_text)
-            if match and all(match.groups()):
-                line_number, severity, issue_type, description = match.groups()
-                line_number = int(line_number)  # Chuyển thành số nguyên
+            # Using a regex to find the issue title and extract information
+            match = re.search(r"### \[Line (\d+)\] - \[(.*?)\] - \[(.*?)\] - (.*)", section)
 
-                # Chuẩn hóa description
+            if match:
+                line_number, severity, issue_type, description = match.groups()
+                line_number = int(line_number)
+
+                # Standardizing the description
                 clean_description = description.capitalize().strip()
                 if not clean_description.endswith("."):
                     clean_description += "."
 
-                comments.append(LineComment(line=line_number, text=f"### [{severity}] [{issue_type}]\n\n{clean_description}"))
-
-            else:
-                comments.append(LineComment(line=0, text=full_text))
+                comment_text = f"### [{severity}] [{issue_type}]\n\n{clean_description}"
+                comments.append(LineComment(line=line_number, text=comment_text))
 
         return comments

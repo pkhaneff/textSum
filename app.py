@@ -21,7 +21,7 @@ model = model.to("cpu")
 class DialogueInput(BaseModel):
     dialogue: str
 
-def clean_text(: str) -> str:
+def clean_text(text: str) -> str:
     text = re.sub(r'\r\n|\n', '\n', text)
     text = re.sub(r'[ \t]+', ' ', text)
     text = re.sub(r'<.*?>', '', text)
@@ -30,7 +30,7 @@ def clean_text(: str) -> str:
 
 def summarize_dialogue(dialogue: str) -> str:
     dialogue = clean_text(dialogue)
-    inputs = tokenizer(dialogue, return_tensors="pt", padding="max_length", max_length=512)
+    inputs = tokenizer(dialogue, return_tensors="pt", truncation=True, padding="max_length", max_length=512)
 
     outputs = model.generate(
         inputs["input_ids"],
@@ -44,4 +44,4 @@ def summarize_dialogue(dialogue: str) -> str:
 @app.post('/summarize/')
 async def summarize(dialogue_input: DialogueInput):
     summary = summarize_dialogue(dialogue_input.dialogue)
-    return {'summary': result}
+    return {'summary': summary}
