@@ -33,38 +33,13 @@ class AiBot(ABC):
         {code}
         ```
 
-        Suggested Fix (nếu có):
-        ```diff
+        **Suggested Fix:**
         {suggested_fix}
-        ```
-
-        ---
-        Ví dụ:
-        ### [Line 123] - [Warning] - [Logical Error] - Incorrect function name used for saving newComment.
-
-        **Code:**
-        ```diff
-        - await newComment.saved()
-        + await newComment.save()
-        ```
-
-        Suggested Fix:
-        ```diff
-        Sửa lại phương thức `.saved()` thành `.save()` để tránh lỗi.
-        ```
-
-        ---
-
+               
         **Note:**
 
         *   `Code` and `Suggested Fix` are wrapped with ```diff to show code diffs and fixes.
         *   Titles and instructions are formatted for readability.
-
-        **Reason for modification:**
-
-        *   Removed complex Markdown like bullet points for easy copying.
-        *   Used simple titles to differentiate sections.
-        *   Kept code blocks to easily identify diffs and fixes.
     """
 
     @abstractmethod
@@ -79,24 +54,27 @@ class AiBot(ABC):
             issue_type = diffs[0].get("type", "General Issue") 
             issue_description = diffs[0].get("issue_description", "No description")
             suggested_fix = diffs[0].get("suggested_fix", "")
+            code_content = diffs[0].get("code", "")  # Lấy nội dung code từ diff
         elif isinstance(diffs, dict):
             line_number = diffs.get("line_number", "N/A")
             severity = diffs.get("severity", "Warning")
             issue_type = diffs.get("type", "General Issue") 
             issue_description = diffs.get("issue_description", "No description")
             suggested_fix = diffs.get("suggested_fix", "")
+            code_content = diffs.get("code", "")  # Lấy nội dung code từ diff
         else:
             line_number = "N/A"
             severity = "Warning"
             issue_type = "General Issue"
             issue_description = "No description"
             suggested_fix = ""
+            code_content = ""
 
         return AiBot.__chat_gpt_ask_long.format(
             problems=AiBot.__problems,
             no_response=AiBot.__no_response,
             diffs=diffs,
-            code=code,
+            code=code_content,
             line_number=line_number,
             severity=severity,
             type=issue_type,
@@ -116,27 +94,49 @@ class AiBot(ABC):
             return []
 
         comments = []
-        # Splitting the input by the separator "---"
-        sections = re.split(r"---", input)
+        current_comment = None
+        in_code_block = False
 
-        for section in sections:
-            section = section.strip()
-            if not section:
+        for line in input.splitlines():
+            line = line.strip()
+            if not line:
                 continue
 
-            # Using a regex to find the issue title and extract information
-            match = re.search(r"### \[Line (\d+)\] - \[(.*?)\] - \[(.*?)\] - (.*)", section)
+            if line.startswith("###"):
+                # Xử lý tiêu đề mới
+                match = re.match(r"### \[Line (\d+)\] - \[(.*?)\] - \[(.*?)\] - (.*)", line)
+                if match:
+                    line_number, severity, issue_type, description = match.groups()
+                    line_number = int(line_number)
 
-            if match:
-                line_number, severity, issue_type, description = match.groups()
-                line_number = int(line_number)
+                    clean_description = description.capitalize().strip()
+                    if not clean_description.endswith("."):
+                        clean_description += "."
 
-                # Standardizing the description
-                clean_description = description.capitalize().strip()
-                if not clean_description.endswith("."):
-                    clean_description += "."
+                    # Lưu comment hiện tại nếu có
+                    if current_comment:
+                        comments.append(current_comment)
 
-                comment_text = f"### [{severity}] [{issue_type}]\n\n{clean_description}"
-                comments.append(LineComment(line=line_number, text=comment_text))
+                    # Tạo comment mới
+                    current_comment = LineComment(line=line_number, text=f"### [{severity}] [{issue_type}] - {clean_description}\n\n")
+                    in_code_block = False  # Đặt lại trạng thái code block
+            elif line.startswith("```diff"):
+                # Bắt đầu code block
+                in_code_block = True
+                if current_comment:
+                    current_comment.text += "```diff\n"
+            elif line.startswith("```") and in_code_block:
+                # Kết thúc code block
+                in_code_block = False
+                if current_comment:
+                    current_comment.text += "```\n"
+            else:
+                # Nội dung của comment hoặc code
+                if current_comment:
+                    current_comment.text += line + "\n"
+
+        # Lưu comment cuối cùng
+        if current_comment:
+            comments.append(current_comment)
 
         return comments
