@@ -18,12 +18,9 @@ class AiBot(ABC):
         **Review Guidelines:**
         - **Syntax Errors**: Compilation/runtime failures.
         - **Logical Errors**: Incorrect conditions, infinite loops, unexpected behavior.
-        - **Security Issues**: SQL injection, XSS, hardcoded secrets, unvalidated inputs.
-        - **Performance Bottlenecks**: Unoptimized loops, redundant computations.
-        - **Best Practices Violations**: Only report issues on unchanged or newly introduced code.
 
         **Output Format:**
-        - Each issue should follow the following Markdown format, resembling a commit log:
+        Each issue should follow the following Markdown format, resembling a commit log:
 
         ```markdown
         ### [Line {line_number}] - [{severity}] - [{type}] - {issue_description}
@@ -31,40 +28,31 @@ class AiBot(ABC):
         **Code:**
         ```diff
         {code}
+        ```
 
         Suggested Fix (nếu có):
         {suggested_fix}
-
-        Hướng dẫn:
-        - Thay thế {line_number} bằng số dòng liên quan.
-        - Chỉ bao gồm phần Suggested Fix nếu vấn đề cần một giải pháp. Nếu code đúng, bỏ qua phần này.
-        - Bỏ qua Suggested Fix nếu vấn đề đã rõ ràng hoặc không yêu cầu thay đổi code.
-        - Nếu không tìm thấy vấn đề nào, trả về chính xác: {no_response}.
-
-        Ví dụ:
-        ### [Line 15] - [Warning] - [Logical Errors] - Biến 'data' có thể chưa được khởi tạo.
+         Ví dụ:
+        ### ⚠️ [Warning] [Logical Error] - Incorrect function name used for saving newComment.
 
         **Code:**
         ```diff
-        - let result = data.length;
-        + let result = data ? data.length : 0;
+        - await newComment.saved()
+        + await newComment.save()
 
-        Suggested Fix:
-        Kiểm tra xem biến 'data' có giá trị trước khi truy cập thuộc tính 'length'.
-
-        let result = data ? data.length : 0;
+        **Suggested Fix:**
+        Sửa lại phương thức `.saved()` thành `.save()` để tránh lỗi.            
                 
-        **Lưu ý:**
+        **Note:**
 
-        * Phần `Code` và `Suggested Fix` vẫn được bọc trong dấu ```diff và ``` để thể hiện code diff và code sửa lỗi.
-        * Các tiêu đề và hướng dẫn được định dạng để dễ đọc.
-        * Bỏ các dấu gạch đầu dòng thừa.
+        *   `Code` and `Suggested Fix` are wrapped with ```diff to show code diffs and fixes.
+        *   Titles and instructions are formatted for readability.
 
-        **Lý do sửa đổi:**
+        **Reason for modification:**
 
-        * Loại bỏ các định dạng Markdown phức tạp như dấu chấm đầu dòng để dễ copy.
-        * Sử dụng các tiêu đề đơn giản để phân biệt các phần.
-        * Giữ lại các khối code để dễ dàng nhận biết code diff và code sửa lỗi.
+        *   Removed complex Markdown like bullet points for easy copying.
+        *   Used simple titles to differentiate sections.
+        *   Kept code blocks to easily identify diffs and fixes.
     """
 
     @abstractmethod
@@ -73,7 +61,7 @@ class AiBot(ABC):
 
     @staticmethod
     def build_ask_text(code, diffs) -> str:
-        if isinstance(diffs, list) and len(diffs) > 0:
+        if isinstance(diffs, list) and diffs:
             line_number = diffs[0].get("line_number", "N/A")
             severity = diffs[0].get("severity", "Warning")
             issue_type = diffs[0].get("type", "General Issue") 
@@ -116,21 +104,26 @@ class AiBot(ABC):
             return []
 
         lines = input.strip().split("\n")
-        models = []
+        comments = []
 
         for full_text in lines:
             full_text = full_text.strip()
             if not full_text:
                 continue
 
-            match = re.match(r"(⚠️|❌)\s*\[(.*?)\]\s*\[(.*?)\]\s*(.*)", full_text)
+            # Changed regex to match the required format
+            match = re.match(r"### \[Line (\d+)\] - \[(.*?)\] - \[(.*?)\] - (.*)", full_text)
             if match and all(match.groups()):
-                severity_icon, severity, issue_type, description = match.groups()
-                clean_description = description.capitalize().strip() if description else "No description provided"
+                line_number, severity, issue_type, description = match.groups()
+                line_number = int(line_number)
+
+                clean_description = description.capitalize().strip()
                 if not clean_description.endswith("."):
                     clean_description += "."
-                models.append(LineComment(line=0, text=f"{severity_icon} [{severity}] [{issue_type}] {clean_description}"))
-            elif full_text.strip():  
-                models.append(LineComment(line=0, text=full_text))
 
-        return models
+                comments.append(LineComment(line=line_number, text=f"### [{severity}] [{issue_type}]\n\n{clean_description}"))
+
+            else:
+                comments.append(LineComment(line=0, text=full_text))
+
+        return comments
