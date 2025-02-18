@@ -9,6 +9,7 @@ from repository.github import GitHub
 from repository.repository import RepositoryError
 
 PR_SUMMARY_COMMENT_IDENTIFIER = "<!-- PR SUMMARY COMMENT -->"
+EXCLUDED_FOLDERS = {".ai/io/nerdythings", ".github/workflows"}
 
 def main():
     vars = EnvVars()
@@ -26,10 +27,20 @@ def main():
         Log.print_red("No changes detected.")
         return
 
-    Log.print_yellow(f"Changed files: {changed_files}")
+    # Loại bỏ các file trong các thư mục bị loại trừ
+    changed_files = [
+        file for file in changed_files
+        if not any(file.startswith(excluded) for excluded in EXCLUDED_FOLDERS)
+    ]
+
+    if not changed_files:
+        Log.print_green("All changed files are excluded from review.")
+        return
+
+    Log.print_yellow(f"Filtered changed files: {changed_files}")
 
     update_pr_summary(changed_files, ai, github)
-    
+
     reviewed_files = set()
     for file in changed_files:
         process_file(file, ai, github, vars, reviewed_files)
