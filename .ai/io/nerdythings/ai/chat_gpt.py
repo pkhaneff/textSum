@@ -44,7 +44,8 @@ class ChatGPT(AiBot):
     def ai_request_summary(self, file_changes):
         try:
             print(f"🔍 Debug: type(file_changes) = {type(file_changes)}")  
-            print(f"🔍 Debug: file_changes = {file_changes[:200]}") 
+            print(f"🔍 Debug: file_changes keys = {list(file_changes.keys())}")
+            print(f"🔍 Debug: file_changes (type: {type(file_changes)}): {str(file_changes)[:200]}")
 
             if isinstance(file_changes, str):
                 try:
