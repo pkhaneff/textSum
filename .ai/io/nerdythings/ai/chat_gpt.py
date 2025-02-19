@@ -1,5 +1,6 @@
 import os
 from openai import OpenAI
+import traceback
 from ai.ai_bot import AiBot
 
 class ChatGPT(AiBot):
@@ -37,13 +38,21 @@ class ChatGPT(AiBot):
             print(traceback.format_exc())  # In lỗi chi tiết
             return f"❌ Error occurred: {str(e)}"
         
-    def ai_request_summary(self, code):
+    def ai_request_summary(self, file_changes):
         try:
+            if not isinstance(file_changes, dict):
+                raise ValueError("file_changes phải là một dictionary!")
+
+            summary_request = "Tóm tắt nội dung PR...\n"
+            
+            for file_name, file_content in file_changes.items():
+                summary_request += f"\nFile: {file_name}\nNội dung thay đổi:\n{file_content}\n"
+
             response = self.__client.chat.completions.create(
-                messages=[{"role": "user", "content": f"Tóm tắt nội dung PR:\n\n{code}"}],
+                messages=[{"role": "user", "content": summary_request}],
                 model=self.__chat_gpt_model,
                 stream=False,
-                max_tokens=1024  
+                max_tokens=2048  
             )
 
             if response and response.choices and len(response.choices) > 0:
@@ -53,7 +62,9 @@ class ChatGPT(AiBot):
                 else:
                     return "⚠️ AI không cung cấp phản hồi hợp lệ."
             return "⚠️ Không nhận được phản hồi từ AI."
+
         except Exception as e:
             print(f"🚨 API Error: {e}")
-            return "❌ Lỗi xảy ra khi xử lý AI."
-    
+            print(traceback.format_exc())
+            return f"❌ Error occurred: {str(e)}"
+
