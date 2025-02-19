@@ -64,8 +64,9 @@ def update_pr_summary(changed_files, ai, github):
     if not file_contents:
         return
 
-    full_context = "\n\n".join(file_contents)
+    full_context = {file: content[:1000] for file, content in zip(changed_files, file_contents)}
     new_summary = ai.ai_request_summary(file_changes=full_context)
+
 
     pr_data = github.get_pull_request()
     current_body = pr_data.get("body") or ""
