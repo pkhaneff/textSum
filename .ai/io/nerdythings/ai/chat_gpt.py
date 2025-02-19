@@ -35,11 +35,14 @@ class ChatGPT(AiBot):
         except Exception as e:
             import traceback
             print(f"🚨 API Error: {e}")
-            print(traceback.format_exc())  # In lỗi chi tiết
+            print(traceback.format_exc())
             return f"❌ Error occurred: {str(e)}"
         
     def ai_request_summary(self, file_changes):
         try:
+            print(f"🔍 Debug: type(file_changes) = {type(file_changes)}")
+            print(f"🔍 Debug: file_changes = {file_changes}")
+            
             if not isinstance(file_changes, dict):
                 raise ValueError("file_changes phải là một dictionary!")
 
@@ -67,4 +70,3 @@ class ChatGPT(AiBot):
             print(f"🚨 API Error: {e}")
             print(traceback.format_exc())
             return f"❌ Error occurred: {str(e)}"
-
