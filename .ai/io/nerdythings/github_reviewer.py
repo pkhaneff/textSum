@@ -63,8 +63,9 @@ def update_pr_summary(changed_files, ai, github):
 
     if not file_contents:
         return
-
-    full_context = {file: content[:1000] for file, content in zip(changed_files, file_contents)}
+    
+    Log.print_yellow(f"File contents before processing: {file_contents}")
+    full_context = {file: (content[:1000] if isinstance(content, str) else "") for file, content in zip(changed_files, file_contents)}
     new_summary = ai.ai_request_summary(file_changes=full_context)
 
 
