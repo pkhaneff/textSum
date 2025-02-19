@@ -1,6 +1,7 @@
 import os
 from openai import OpenAI
 import traceback
+import json
 from ai.ai_bot import AiBot
 
 class ChatGPT(AiBot):
@@ -35,16 +36,27 @@ class ChatGPT(AiBot):
         except Exception as e:
             import traceback
             print(f"🚨 API Error: {e}")
-            print(traceback.format_exc())  # In lỗi chi tiết
+            print(traceback.format_exc())
             return f"❌ Error occurred: {str(e)}"
         
+    import json
+
     def ai_request_summary(self, file_changes):
         try:
+            print(f"🔍 Debug: type(file_changes) = {type(file_changes)}")  
+            print(f"🔍 Debug: file_changes keys = {list(file_changes.keys())}")
+            print(f"🔍 Debug: file_changes (type: {type(file_changes)}): {str(file_changes)[:200]}")
+
+            if isinstance(file_changes, str):
+                try:
+                    file_changes = json.loads(file_changes)  
+                except json.JSONDecodeError:
+                    raise ValueError("⚠️ file_changes là string nhưng không phải JSON hợp lệ!")
+
             if not isinstance(file_changes, dict):
-                raise ValueError("file_changes phải là một dictionary!")
+                raise ValueError(f"⚠️ file_changes phải là một dictionary! Nhận: {type(file_changes)}")
 
             summary_request = "Tóm tắt nội dung PR...\n"
-            
             for file_name, file_content in file_changes.items():
                 summary_request += f"\nFile: {file_name}\nNội dung thay đổi:\n{file_content}\n"
 
@@ -67,4 +79,3 @@ class ChatGPT(AiBot):
             print(f"🚨 API Error: {e}")
             print(traceback.format_exc())
             return f"❌ Error occurred: {str(e)}"
-
