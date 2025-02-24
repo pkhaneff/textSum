@@ -115,22 +115,16 @@ class AiBot(ABC):
         if not input:
             return []
 
-        lines = input.strip().split("\n")
+        lines = [line.strip() for line in input.strip().split("\n") if line.strip()]  # Bỏ dòng trắng
         comments = []
         total_lines_in_code = 1000  # Giả sử tổng số dòng code, có thể tính động
 
         for full_text in lines:
-            full_text = full_text.strip()
-            if not full_text:
-                continue
-
-            # Cải thiện regex để trích xuất dữ liệu Markdown đúng
             match = re.match(r"### \[Line (\d+)\] - \[(Warning|Error|Critical)\] - \[(.*?)\] - (.*)", full_text)
             if match:
                 line_number, severity, issue_type, description = match.groups()
                 line_number = int(line_number)
 
-                # Kiểm tra nếu line_number hợp lệ
                 if line_number < 1 or line_number > total_lines_in_code:
                     continue
 
@@ -142,16 +136,15 @@ class AiBot(ABC):
                     line=line_number,
                     text=f"### [{severity}] [{issue_type}]\n\n{clean_description}"
                 ))
-
             else:
                 comments.append(LineComment(line=0, text=full_text))
 
-        # Nếu format chưa đạt chuẩn, chờ AI xử lý thêm
         if not AiBot.check_markdown_format(comments):
-            time.sleep(2)  # Đợi 2 giây rồi thử lại
-            return AiBot.split_ai_response(input)  # Gọi lại để kiểm tra tiếp
+            time.sleep(2)
+            return AiBot.split_ai_response(input)
 
         return comments
+
 
     @staticmethod
     def check_markdown_format(comments):
