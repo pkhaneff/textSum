@@ -27,7 +27,43 @@ def main():
         Log.print_red("No changes detected.")
         return
 
-    # Loại bỏ các file trong các thư mục bị loại trừ
+    changed_files = [
+        file for file in changed_files
+        if not any(file.startswith(excluded) for excluded in EXCLUDED_FOLDERS)
+    ]
+
+    if not changed_files:
+        Log.print_green("All changed files are excluded from review.")
+        return
+
+    Log.print_yellow(f"Filtered changed files: {changed_files}")
+
+    update_pr_summary(changed_files, ai, github)
+
+    ai_responses = {} 
+
+    for file in changed_files:
+        response = process_file(file, ai, vars)
+        if response:
+            ai_responses[file] = response
+
+    post_ai_comments_per_file(ai_responses, github)
+
+    vars = EnvVars()
+    vars.check_vars()
+
+    if os.getenv("GITHUB_EVENT_NAME") != "pull_request" or not vars.pull_number:
+        Log.print_red("This action only runs on pull request events.")
+        return
+
+    github = GitHub(vars.token, vars.owner, vars.repo, vars.pull_number)
+    ai = ChatGPT(vars.chat_gpt_token, vars.chat_gpt_model)
+
+    changed_files = Git.get_diff_files(head_ref=vars.head_ref, base_ref=vars.base_ref)
+    if not changed_files:
+        Log.print_red("No changes detected.")
+        return
+
     changed_files = [
         file for file in changed_files
         if not any(file.startswith(excluded) for excluded in EXCLUDED_FOLDERS)
@@ -88,28 +124,56 @@ def update_pr_summary(changed_files, ai, github):
     except RepositoryError as e:
         Log.print_red(f"Failed to update PR description: {e}")
 
-def process_file(file, ai, github, vars, reviewed_files):
-    if file in reviewed_files:
-        Log.print_green(f"Skipping file {file} as it has already been reviewed.")
-        return
-
+def process_file(file, ai, vars):
     Log.print_green(f"Reviewing file: {file}")
+
     try:
         with open(file, 'r', encoding="utf-8", errors="replace") as f:
             file_content = f.read()
     except FileNotFoundError:
         Log.print_yellow(f"File not found: {file}")
-        return
+        return None
 
     file_diffs = Git.get_diff_in_file(head_ref=vars.head_ref, base_ref=vars.base_ref, file_path=file)
     if not file_diffs:
         Log.print_red(f"No diffs found for: {file}")
-        return
+        return None
 
     Log.print_green(f"AI analyzing changes in {file}...")
     response = ai.ai_request_diffs(code=file_content, diffs=file_diffs)
 
-    handle_ai_response(response, github, file, file_diffs, reviewed_files)
+    return response 
+
+def post_ai_comments_per_file(ai_responses, github):
+    if not ai_responses:
+        Log.print_green("No issues detected across all files.")
+        return
+
+    try:
+        existing_comments = github.get_comments()
+
+        for file, response in ai_responses.items():
+            if not response or AiBot.is_no_issues_text(response):
+                Log.print_green(f"No issues detected in {file}.")
+                continue
+
+            suggestions = parse_ai_suggestions(response)
+            if not suggestions:
+                Log.print_red(f"Failed to parse AI suggestions for {file}.")
+                continue
+
+            comment_body = f"### AI Review for {file}\n\n" + "\n".join(f"- {s.strip()}" for s in suggestions)
+
+            comment_already_posted = any(comment['body'] == comment_body for comment in existing_comments)
+            if not comment_already_posted:
+                github.post_comment_general(comment_body)
+                Log.print_yellow(f"Posted review for {file}")
+            else:
+                Log.print_green(f"Review for {file} already posted, skipping.")
+
+    except RepositoryError as e:
+        Log.print_red(f"Failed to post AI review comments: {e}")
+
 
 def handle_ai_response(response, github, file, file_diffs, reviewed_files):
     if not response or AiBot.is_no_issues_text(response):
