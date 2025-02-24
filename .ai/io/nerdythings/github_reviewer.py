@@ -41,8 +41,8 @@ def get_changed_files(vars):
     
     return filtered_files
 
-def update_pr_summary(changed_files, ai, github):
-    Log.print_green("Updating PR description...")
+def update_pr_summary_comment(changed_files, ai, github):
+    Log.print_green("Updating PR summary comment...")
     file_contents = []
     
     for file in changed_files:
@@ -58,73 +58,21 @@ def update_pr_summary(changed_files, ai, github):
     
     full_context = {file: content[:1000] for file, content in zip(changed_files, file_contents)}
     new_summary = ai.ai_request_summary(file_changes=full_context)
-    pr_data = github.get_pull_request()
-    current_body = pr_data.get("body") or ""
-    
-    if PR_SUMMARY_COMMENT_IDENTIFIER in current_body:
-        updated_body = re.sub(
-            f"{PR_SUMMARY_COMMENT_IDENTIFIER}.*",
-            f"{PR_SUMMARY_COMMENT_IDENTIFIER}\n## Summary by BapAI.ReviewCode\n\n{new_summary}",
-            current_body,
-            flags=re.DOTALL
-        )
-    else:
-        updated_body = f"{PR_SUMMARY_COMMENT_IDENTIFIER}\n## Summary by BapAI.ReviewCode\n\n{new_summary}\n\n{current_body}"
-    
-    try:
-        github.update_pull_request(updated_body)
-        Log.print_yellow("PR description updated successfully!")
-    except RepositoryError as e:
-        Log.print_red(f"Failed to update PR description: {e}")
-
-def process_file(file, ai, vars):
-    Log.print_green(f"Reviewing file: {file}")
-    
-    try:
-        with open(file, 'r', encoding="utf-8", errors="replace") as f:
-            file_content = f.read()
-    except FileNotFoundError:
-        Log.print_yellow(f"File not found: {file}")
-        return None
-    
-    file_diffs = Git.get_diff_in_file(head_ref=vars.head_ref, base_ref=vars.base_ref, file_path=file)
-    if not file_diffs:
-        Log.print_red(f"No diffs found for: {file}")
-        return None
-    
-    Log.print_green(f"AI analyzing changes in {file}...")
-    return ai.ai_request_diffs(code=file_content, diffs=file_diffs)
-
-def post_ai_comments_per_file(ai_responses, github):
-    if not ai_responses:
-        Log.print_green("No issues detected across all files.")
-        return
     
     try:
         existing_comments = github.get_comments()
+        summary_comment = next((comment for comment in existing_comments if PR_SUMMARY_COMMENT_IDENTIFIER in comment["body"]), None)
         
-        for file, response in ai_responses.items():
-            if not response or AiBot.is_no_issues_text(response):
-                Log.print_green(f"No issues detected in {file}.")
-                continue
-            
-            suggestions = parse_ai_suggestions(response)
-            if not suggestions:
-                Log.print_red(f"Failed to parse AI suggestions for {file}.")
-                continue
-            
-            comment_body = f"### AI Review for {file}\n\n" + "\n".join(f"- {s.strip()}" for s in suggestions)
-            
-            if not any(comment['body'] == comment_body for comment in existing_comments):
-                github.post_comment_general(comment_body)
-                Log.print_yellow(f"Posted review for {file}")
-            else:
-                Log.print_green(f"Review for {file} already posted, skipping.")
+        updated_comment = f"{PR_SUMMARY_COMMENT_IDENTIFIER}\n## Summary by BapAI.ReviewCode\n\n{new_summary}"
+        
+        if summary_comment:
+            github.update_comment(summary_comment["id"], updated_comment)
+            Log.print_yellow("Updated existing PR summary comment.")
+        else:
+            github.post_comment_general(updated_comment)
+            Log.print_yellow("Posted new PR summary comment.")
     except RepositoryError as e:
-        Log.print_red(f"Failed to post AI review comments: {e}")
-
-def parse_ai_suggestions(response):
-    return response.split("\n\n") if response else []
+        Log.print_red(f"Failed to update PR summary comment: {e}")
 
 def main():
     vars, github, ai = setup()
@@ -135,11 +83,7 @@ def main():
     if not changed_files:
         return
     
-    update_pr_summary(changed_files, ai, github)
-    
-    ai_responses = {file: process_file(file, ai, vars) for file in changed_files if process_file(file, ai, vars)}
-    
-    post_ai_comments_per_file(ai_responses, github)
+    update_pr_summary_comment(changed_files, ai, github)
 
 if __name__ == "__main__":
     main()
