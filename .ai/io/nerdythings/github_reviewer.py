@@ -86,21 +86,24 @@ def process_file(file, ai, vars):
     except FileNotFoundError:
         Log.print_yellow(f"File not found: {file}")
         return None
-    
+
     file_diffs = Git.get_diff_in_file(head_ref=vars.head_ref, base_ref=vars.base_ref, file_path=file)
+
     if not file_diffs:
         Log.print_red(f"No diffs found for: {file}")
         return None
 
-    if not isinstance(file_diffs, list) or not all(isinstance(diff, dict) and "code" in diff for diff in file_diffs):
-        Log.print_red(f"Unexpected diff format for {file}: {file_diffs}")
+    diff_code_blocks = re.findall(r'@@ .*? @@\n(.*?)(?=\n@@ |\Z)', file_diffs, re.DOTALL)
+
+    if not diff_code_blocks:
+        Log.print_red(f"Failed to parse diff for {file}: {file_diffs}")
         return None
 
-    diff_code = "\n".join(diff["code"] for diff in file_diffs)
-    Log.print_green(f"AI analyzing changes in {file}...")
+    diff_code = "\n".join(diff_code_blocks)
     
-    return ai.ai_request_diffs(code=diff_code, diffs=file_diffs)
+    Log.print_green(f"AI analyzing changes in {file}...")
 
+    return ai.ai_request_diffs(code=diff_code, diffs=[{"code": block} for block in diff_code_blocks])
 
 def post_ai_comments_per_file(ai_responses, github):
     if not ai_responses:
@@ -111,9 +114,19 @@ def post_ai_comments_per_file(ai_responses, github):
         existing_comments = github.get_comments()
         
         for file, response in ai_responses.items():
-            if not response or AiBot.is_no_issues_text(response):
-                Log.print_green(f"No issues detected in {file}.")
-                continue
+            comment_body = f"### AI Review for {file}\n\n"
+            if AiBot.is_no_issues_text(response):
+                comment_body += "✅ No issues detected."
+            else:
+                suggestions = parse_ai_suggestions(response)
+                if suggestions:
+                    comment_body += "\n".join(f"- {s.strip()}" for s in suggestions)
+                else:
+                    comment_body += "⚠️ AI review could not parse any meaningful suggestions."
+
+            github.post_comment_general(comment_body)
+            Log.print_yellow(f"Posted review for {file}")
+
             
             suggestions = parse_ai_suggestions(response)
             if not suggestions:
