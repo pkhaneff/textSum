@@ -91,11 +91,16 @@ def process_file(file, ai, vars):
     if not file_diffs:
         Log.print_red(f"No diffs found for: {file}")
         return None
+
+    if not isinstance(file_diffs, list) or not all(isinstance(diff, dict) and "code" in diff for diff in file_diffs):
+        Log.print_red(f"Unexpected diff format for {file}: {file_diffs}")
+        return None
+
+    diff_code = "\n".join(diff["code"] for diff in file_diffs)
+    Log.print_green(f"AI analyzing changes in {file}...")
     
-    if file_diffs:
-        diff_code = "\n".join(diff["code"] for diff in file_diffs)
-        Log.print_green(f"AI analyzing changes in {file}...")
-        return ai.ai_request_diffs(code=diff_code, diffs=file_diffs)
+    return ai.ai_request_diffs(code=diff_code, diffs=file_diffs)
+
 
 def post_ai_comments_per_file(ai_responses, github):
     if not ai_responses:

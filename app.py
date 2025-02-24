@@ -22,7 +22,7 @@ class DialogueInput(BaseModel):
     dialogue: str
 
 def clean_text(text: str) -> str:
-    text = re.sub(r'\r\n|\n', '\n', text)
+    text = re.sub(r'\r\n|\n', '\n')
     text = re.sub(r'[ \t]+', ' ', text)
     text = re.sub(r'<.*?>', '', text)
     text = '\n'.join([line.strip() for line in text.split('\n') if line.strip()])
