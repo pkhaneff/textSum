@@ -22,7 +22,7 @@ class DialogueInput(BaseModel):
     dialogue: str
 
 def clean_text(text: str) -> str:
-    text = re.sub(r'\r\n|\n', '\n')
+    text = re.sub(r'\r\n|\n', '\n', text)
     text = re.sub(r'[ \t]+', ' ', text)
     text = re.sub(r'<.*?>', '', text)
     text = '\n'.join([line.strip() for line in text.split('\n') if line.strip()])
@@ -30,7 +30,7 @@ def clean_text(text: str) -> str:
 
 def summarize_dialogue(dialogue: str) -> str:
     dialogue = clean_text(dialogue)
-    inputs = tokenizer(dialogue, return_tensors="pt",padding="max_length", max_length=512)
+    inputs = tokenizer(dialogue, return_tensors="pt",truncation=True ,padding="max_length", max_length=512)
 
     outputs = model.generate(
         inputs["input_ids"],

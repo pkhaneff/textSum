@@ -92,8 +92,10 @@ def process_file(file, ai, vars):
         Log.print_red(f"No diffs found for: {file}")
         return None
     
-    Log.print_green(f"AI analyzing changes in {file}...")
-    return ai.ai_request_diffs(code=file_content, diffs=file_diffs)
+    if file_diffs:
+        diff_code = "\n".join(diff["code"] for diff in file_diffs)
+        Log.print_green(f"AI analyzing changes in {file}...")
+        return ai.ai_request_diffs(code=diff_code, diffs=file_diffs)
 
 def post_ai_comments_per_file(ai_responses, github):
     if not ai_responses:
