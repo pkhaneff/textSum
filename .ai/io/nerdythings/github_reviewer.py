@@ -79,7 +79,7 @@ def main():
 
     reviewed_files = set()
     for file in changed_files:
-        process_file(file, ai, github, vars, reviewed_files)
+        process_file(file, ai, vars)
 
 def update_pr_summary(changed_files, ai, github):
     """
