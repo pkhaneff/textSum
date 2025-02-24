@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import re
+import time
 from ai.line_comment import LineComment
 
 class AiBot(ABC):
@@ -9,6 +10,7 @@ class AiBot(ABC):
     __chat_gpt_ask_long = """
         You are an AI code reviewer with expertise in multiple programming languages.
         Your goal is to analyze Git diffs and identify potential issues.
+        Ensure your response is strictly formatted in Markdown.
 
         **Review Scope:**
         - Focus on meaningful structural changes, ignoring formatting or comments.
@@ -113,17 +115,13 @@ class AiBot(ABC):
         if not input:
             return []
 
-        lines = input.strip().split("\n")
+        lines = [line.strip() for line in input.strip().split("\n") if line.strip()]  # Bỏ dòng trắng
         comments = []
+        total_lines_in_code = 1000  # Giả sử tổng số dòng code, có thể tính động
 
         for full_text in lines:
-            full_text = full_text.strip()
-            if not full_text:
-                continue
-
-            # Improved regex to match the required format more accurately
             match = re.match(r"### \[Line (\d+)\] - \[(Warning|Error|Critical)\] - \[(.*?)\] - (.*)", full_text)
-            if match and all(match.groups()):
+            if match:
                 line_number, severity, issue_type, description = match.groups()
                 line_number = int(line_number)
 
@@ -134,9 +132,24 @@ class AiBot(ABC):
                 if not clean_description.endswith("."):
                     clean_description += "."
 
-                comments.append(LineComment(line=line_number, text=f"### [{severity}] [{issue_type}]\n\n{clean_description}"))
-
+                comments.append(LineComment(
+                    line=line_number,
+                    text=f"### [{severity}] [{issue_type}]\n\n{clean_description}"
+                ))
             else:
                 comments.append(LineComment(line=0, text=full_text))
 
+        if not AiBot.check_markdown_format(comments):
+            time.sleep(2)
+            return AiBot.split_ai_response(input)
+
         return comments
+
+
+    @staticmethod
+    def check_markdown_format(comments):
+        """Kiểm tra xem Markdown có đúng định dạng không"""
+        for comment in comments:
+            if not re.match(r"### \[.*?\] \[.*?\]\n\n.*", comment.text):
+                return False
+        return True
