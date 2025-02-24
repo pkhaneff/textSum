@@ -34,12 +34,12 @@ def summarize_dialogue(dialogue: str) -> str:
 
     outputs = model.generate(
         inputs["input_ids"],
-        max_length=150
+        max_length=150,
         num_beams=4,
         early_stopping=True
     )
     summary = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return summary
+    return result
 
 @app.post('/summarize/')
 async def summarize(dialogue_input: DialogueInput):
