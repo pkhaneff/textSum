@@ -41,7 +41,7 @@ def summarize_dialogue(dialogue: str) -> str:
     summary = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return summary
 
-@app.post('/summarize/')
+@app.pos('/summarize/')
 async def summarize(dialogue_input: DialogueInput):
     summary = summarize_dialogue(dialogue_input.dialogue)
     return {'summary': summary}
