@@ -127,6 +127,10 @@ class AiBot(ABC):
                 line_number, severity, issue_type, description = match.groups()
                 line_number = int(line_number)
 
+                # Bỏ qua các cảnh báo (Warning)
+                if severity == "Warning":
+                    continue
+
                 if line_number < 1 or line_number > total_lines_in_code:
                     continue
 
@@ -138,5 +142,18 @@ class AiBot(ABC):
 
             else:
                 comments.append(LineComment(line=0, text=full_text))
+                
+        if not AiBot.check_markdown_format(comments):
+            time.sleep(2)
+            return AiBot.split_ai_response(input)
 
         return comments
+
+    @staticmethod
+    def check_markdown_format(comments):
+        """Kiểm tra xem Markdown có đúng định dạng không"""
+        for comment in comments:
+            if not re.match(r"### \[.*?\] \[.*?\]\n\n.*", comment.text):
+                return False
+        return True
+
