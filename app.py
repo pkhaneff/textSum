@@ -30,13 +30,13 @@ def clean_text(text: str) -> str:
 
 def summarize_dialogue(dialogue: str) -> str:
     dialogue = clean_text(dialogue)
-    inputs = tokenizer(dialogue, return_tensors="pt",padding="max_length", max_length=512)
+    inputs = tokenizer(dialogue, return_tensors="pt",truncation=True ,padding="max_length", max_length=512)
 
     outputs = model.generate(
         inputs["input_ids"],
         max_length=150,
-        num_beams=4
-        early_stopping=
+        num_beams=4,
+        early_stopping=True
     )
     summary = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return summary
